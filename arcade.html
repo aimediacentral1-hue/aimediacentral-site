@@ -1,0 +1,2970 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>Bit's Barrio Arcade — Playable Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        color-scheme: dark;
+        --bg:#04070f;
+        --bg2:#081226;
+        --panel:#0a1526;
+        --panel2:#0d1c33;
+        --line:#12365a;
+        --cyan:#00e5ff;
+        --cyan-dim:#0aa7bd;
+        --cyan-soft:rgba(0,229,255,.14);
+        --amber:#ffb62e;
+        --pink:#ff4d7e;
+        --green:#3dff9e;
+        --red:#ff5470;
+        --ink:#eaf7ff;
+        --ink-dim:#9fc3d9;
+        --ink-faint:#6f93a8;
+        --radius:18px;
+        --tab-h:64px;
+      }
+      *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+      html,body{margin:0; padding:0;}
+      body{
+        background:
+          radial-gradient(120% 60% at 50% -10%, rgba(0,229,255,.13), transparent 60%),
+          radial-gradient(90% 50% at 90% 110%, rgba(255,77,126,.07), transparent 60%),
+          linear-gradient(180deg, var(--bg2), var(--bg) 55%);
+        color:var(--ink);
+        font-family:"Nunito", system-ui, sans-serif;
+        min-height:100vh;
+        min-height:100dvh;
+      }
+      /* faint circuit traces */
+      body::before{
+        content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; z-index:0;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%230e3a5c' stroke-width='1.4'%3E%3Cpath d='M10 70 H55 V20 H95'/%3E%3Cpath d='M130 40 V95 H85 V130'/%3E%3Cpath d='M20 120 V95 H45'/%3E%3C/g%3E%3Cg fill='%230e3a5c'%3E%3Ccircle cx='95' cy='20' r='3'/%3E%3Ccircle cx='85' cy='130' r='3'/%3E%3Ccircle cx='45' cy='95' r='3'/%3E%3Ccircle cx='10' cy='70' r='3'/%3E%3C/g%3E%3C/svg%3E");
+      }
+      #app{position:relative; z-index:1; max-width:480px; margin:0 auto; padding:18px 16px calc(var(--tab-h) + 26px);}
+      h1,h2,h3{font-family:"Bungee", "Nunito", sans-serif; font-weight:400; margin:0;}
+      button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+      a{color:inherit;}
+
+      /* ---------- views ---------- */
+      .view{display:none;}
+      .view.active{display:block; animation:viewIn .28s ease both;}
+      @keyframes viewIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+      @media (prefers-reduced-motion: reduce){
+        .view.active{animation:none;}
+        *{transition:none !important;}
+      }
+
+      /* ---------- lobby ---------- */
+      .marquee{
+        text-align:center; padding:14px 10px 4px;
+      }
+      .marquee .over{
+        font-weight:900; letter-spacing:.28em; font-size:11px; color:var(--cyan);
+        text-transform:uppercase;
+      }
+      .marquee h1{
+        font-size:clamp(30px, 9vw, 42px); line-height:1.08; margin-top:8px;
+        color:#fff;
+        text-shadow:0 0 18px rgba(0,229,255,.55), 0 0 46px rgba(0,229,255,.25);
+      }
+      .marquee h1 .cy{color:var(--cyan);}
+      .bit-stage{display:flex; align-items:flex-end; gap:12px; margin:14px 2px 4px;}
+      .bit-wrap{flex:0 0 108px; filter:drop-shadow(0 0 14px rgba(0,229,255,.35));}
+      .bit-wrap svg{width:100%; height:auto; display:block;}
+      .bit-bob{animation:bob 3.2s ease-in-out infinite;}
+      @keyframes bob{0%,100%{transform:translateY(0);} 50%{transform:translateY(-5px);}}
+      .bubble{
+        flex:1; background:var(--panel2); border:1.5px solid var(--cyan-dim);
+        border-radius:16px; border-bottom-left-radius:4px; padding:12px 14px;
+        box-shadow:0 0 18px rgba(0,229,255,.12) inset, 0 6px 18px rgba(0,0,0,.35);
+      }
+      .bubble .who{font-size:11px; font-weight:900; letter-spacing:.18em; color:var(--cyan); text-transform:uppercase;}
+      .bubble p{margin:4px 0 0; font-size:17px; font-weight:800; line-height:1.35;}
+      .bubble p.small{font-size:13.5px; font-weight:700; color:var(--ink-dim);}
+
+      .cab-label{margin:22px 2px 10px; font-size:12px; font-weight:900; letter-spacing:.24em; color:var(--ink-faint); text-transform:uppercase;}
+      .cabinet{
+        display:flex; align-items:center; gap:14px; width:100%; text-align:left;
+        background:linear-gradient(160deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:var(--radius);
+        padding:16px; margin-bottom:12px; position:relative; overflow:hidden;
+        transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      }
+      .cabinet::after{
+        content:""; position:absolute; inset:0;
+        background:linear-gradient(115deg, transparent 40%, rgba(0,229,255,.08) 50%, transparent 60%);
+        pointer-events:none;
+      }
+      .cabinet.live{border-color:var(--cyan-dim); box-shadow:0 0 0 1px rgba(0,229,255,.15), 0 0 26px rgba(0,229,255,.14);}
+      .cabinet.live:active{transform:scale(.985);}
+      .cabinet.locked{opacity:.78;}
+      .cab-icon{
+        flex:0 0 58px; width:58px; height:58px; border-radius:14px;
+        display:flex; align-items:center; justify-content:center;
+        background:var(--cyan-soft); border:1.5px solid rgba(0,229,255,.35);
+      }
+      .cabinet.locked .cab-icon{background:rgba(255,182,46,.08); border-color:rgba(255,182,46,.3);}
+      .cab-body{flex:1; min-width:0;}
+      .cab-body h3{font-size:19px; letter-spacing:.02em; color:#fff;}
+      .cab-body p{margin:3px 0 0; font-size:13.5px; font-weight:700; color:var(--ink-dim); line-height:1.4;}
+      .cab-tag{
+        flex:0 0 auto; font-family:"Bungee",sans-serif; font-size:12px; letter-spacing:.06em;
+        padding:9px 13px; border-radius:999px;
+      }
+      .cab-tag.play{background:var(--cyan); color:#03222b; box-shadow:0 0 16px rgba(0,229,255,.55);}
+      .cab-tag.soon{background:rgba(255,182,46,.14); color:var(--amber); border:1.5px solid rgba(255,182,46,.45); font-family:"Nunito",sans-serif; font-weight:900; font-size:11.5px; text-align:center; line-height:1.3;}
+      .free-note{
+        margin:16px 4px 0; text-align:center; font-size:13px; font-weight:800; color:var(--ink-dim);
+      }
+      .free-note b{color:var(--cyan);}
+      .brandline{margin:22px 0 0; text-align:center; font-size:11px; font-weight:800; letter-spacing:.2em; color:var(--ink-faint); text-transform:uppercase;}
+
+      /* ---------- quiz home ---------- */
+      .topbar{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+      .back-btn{
+        width:42px; height:42px; border-radius:12px; flex:0 0 auto;
+        background:var(--panel2); border:1.5px solid var(--line);
+        display:flex; align-items:center; justify-content:center; font-size:19px; color:var(--cyan);
+      }
+      .topbar h2{font-size:21px; color:#fff; flex:1; text-shadow:0 0 14px rgba(0,229,255,.4);}
+      .lang-toggle{
+        display:flex; background:var(--panel2); border:1.5px solid var(--line);
+        border-radius:999px; padding:3px; flex:0 0 auto;
+      }
+      .lang-toggle button{
+        font-weight:900; font-size:13px; padding:6px 13px; border-radius:999px; color:var(--ink-dim);
+      }
+      .lang-toggle button.on{background:var(--cyan); color:#03222b; box-shadow:0 0 12px rgba(0,229,255,.5);}
+      .quiz-sub{margin:4px 2px 16px; font-size:14.5px; font-weight:700; color:var(--ink-dim); line-height:1.5;}
+      .daily-btn{
+        width:100%; display:flex; align-items:center; gap:13px; text-align:left;
+        background:linear-gradient(120deg, rgba(255,182,46,.16), rgba(255,77,126,.12));
+        border:1.5px solid rgba(255,182,46,.55); border-radius:var(--radius);
+        padding:15px 16px; margin-bottom:18px;
+        box-shadow:0 0 22px rgba(255,182,46,.12);
+      }
+      .daily-btn:active{transform:scale(.985);}
+      .daily-btn .d-ico{flex:0 0 44px; width:44px; height:44px; border-radius:12px; background:rgba(255,182,46,.16); display:flex; align-items:center; justify-content:center;}
+      .daily-btn h3{font-size:16.5px; color:#fff;}
+      .daily-btn p{margin:2px 0 0; font-size:12.5px; font-weight:800; color:#ffd9a0;}
+      .daily-btn .d-best{margin-left:auto; flex:0 0 auto; text-align:right; font-size:11px; font-weight:900; color:var(--amber); letter-spacing:.04em;}
+      .daily-btn .d-best b{display:block; font-size:17px; color:#fff;}
+      .tier-label{margin:0 2px 10px; font-size:12px; font-weight:900; letter-spacing:.24em; color:var(--ink-faint); text-transform:uppercase;}
+      .tier{
+        width:100%; display:flex; align-items:center; gap:13px; text-align:left;
+        background:linear-gradient(160deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:var(--radius); padding:15px 16px; margin-bottom:11px;
+        transition:transform .15s ease, border-color .15s ease;
+      }
+      .tier:active{transform:scale(.985); border-color:var(--cyan-dim);}
+      .tier .t-ico{flex:0 0 46px; width:46px; height:46px; border-radius:12px; background:var(--cyan-soft); border:1.5px solid rgba(0,229,255,.3); display:flex; align-items:center; justify-content:center; font-size:23px;}
+      .tier h3{font-size:17px; color:#fff; font-family:"Nunito",sans-serif; font-weight:900; letter-spacing:0;}
+      .tier p{margin:2px 0 0; font-size:13px; font-weight:700; color:var(--ink-dim); line-height:1.4;}
+      .tier .t-best{margin-left:auto; flex:0 0 auto; text-align:right; font-size:10.5px; font-weight:900; color:var(--ink-faint); letter-spacing:.05em; text-transform:uppercase;}
+      .tier .t-best b{display:block; font-size:16px; color:var(--cyan);}
+      .how-card{
+        margin-top:16px; background:var(--panel); border:1.5px dashed var(--line);
+        border-radius:var(--radius); padding:14px 16px; font-size:13.5px; font-weight:700; color:var(--ink-dim); line-height:1.65;
+      }
+      .how-card b{color:var(--cyan);}
+
+      /* ---------- game ---------- */
+      .hud{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+      .hud .hud-box{
+        background:var(--panel2); border:1.5px solid var(--line); border-radius:12px;
+        padding:7px 12px; font-weight:900; font-size:14px; display:flex; align-items:center; gap:6px;
+      }
+      .hud .hud-box small{display:block; font-size:9.5px; letter-spacing:.14em; color:var(--ink-faint); text-transform:uppercase; font-weight:900;}
+      .hud .score-box{margin-left:auto; color:var(--cyan); font-size:17px;}
+      .streak-box.hot{border-color:rgba(255,120,40,.7); color:#ffb37a; box-shadow:0 0 14px rgba(255,110,30,.25);}
+      .flame{display:inline-flex;}
+      .flame svg{display:block;}
+      .q-progress{font-size:12px; font-weight:900; color:var(--ink-faint); letter-spacing:.1em; margin:2px 2px 8px; display:flex; justify-content:space-between;}
+      .timer-track{height:9px; border-radius:99px; background:#0b1c33; border:1px solid var(--line); overflow:hidden; margin-bottom:16px;}
+      .timer-fill{height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg, var(--cyan-dim), var(--cyan)); box-shadow:0 0 10px rgba(0,229,255,.6); transition:width .1s linear;}
+      .timer-fill.low{background:linear-gradient(90deg, #c22e4a, var(--red)); box-shadow:0 0 10px rgba(255,84,112,.6);}
+      .q-bit{display:flex; gap:10px; align-items:flex-end; margin-bottom:12px;}
+      .q-bit .bit-wrap{flex-basis:62px;}
+      .q-bit .bubble{padding:9px 12px;}
+      .q-bit .bubble p{font-size:14px;}
+      .q-card{
+        background:linear-gradient(165deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:var(--radius); padding:18px 16px 8px;
+      }
+      .q-text{font-size:19.5px; font-weight:900; line-height:1.4; margin:0 0 16px;}
+      .answers{display:flex; flex-direction:column; gap:10px; padding-bottom:10px;}
+      .ans{
+        width:100%; text-align:left; display:flex; align-items:center; gap:11px;
+        background:#0a1830; border:1.5px solid var(--line); border-radius:14px;
+        padding:13px 14px; font-size:15.5px; font-weight:800; color:var(--ink); line-height:1.35;
+        transition:border-color .12s ease, background .12s ease, transform .1s ease;
+      }
+      .ans:active{transform:scale(.99);}
+      .ans .letter{
+        flex:0 0 30px; width:30px; height:30px; border-radius:9px; background:var(--cyan-soft);
+        color:var(--cyan); display:flex; align-items:center; justify-content:center;
+        font-family:"Bungee",sans-serif; font-size:13px;
+      }
+      .ans.correct{border-color:var(--cyan); background:rgba(0,229,255,.14); box-shadow:0 0 18px rgba(0,229,255,.4); color:#fff;}
+      .ans.correct .letter{background:var(--cyan); color:#03222b;}
+      .ans.wrong{border-color:var(--red); background:rgba(255,84,112,.12); color:#ffd7de;}
+      .ans.wrong .letter{background:var(--red); color:#2b030c;}
+      .ans.dim{opacity:.45;}
+      .ans[disabled]{cursor:default;}
+      .explain{
+        display:none; margin:4px 0 12px; padding:12px 14px; border-radius:12px;
+        background:rgba(0,229,255,.07); border:1.5px solid rgba(0,229,255,.3);
+        font-size:14.5px; font-weight:700; line-height:1.5; color:var(--ink);
+      }
+      .explain.show{display:block; animation:viewIn .25s ease both;}
+      .explain .verdict{font-family:"Bungee",sans-serif; font-size:13px; letter-spacing:.04em; margin-bottom:4px;}
+      .explain .verdict.good{color:var(--cyan);}
+      .explain .verdict.bad{color:var(--red);}
+      .explain .pts{color:var(--amber); font-weight:900;}
+
+      /* ---------- results ---------- */
+      .results{text-align:center; padding-top:6px;}
+      .results .bit-wrap{width:130px; margin:0 auto;}
+      .results h2{font-size:26px; color:#fff; margin-top:10px; text-shadow:0 0 16px rgba(0,229,255,.45);}
+      .reaction{font-size:16px; font-weight:800; color:var(--ink-dim); line-height:1.5; max-width:340px; margin:8px auto 0;}
+      .stat-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:20px 0 6px;}
+      .stat{
+        background:linear-gradient(165deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:14px; padding:13px 6px;
+      }
+      .stat b{display:block; font-family:"Bungee",sans-serif; font-size:21px; color:var(--cyan); font-weight:400;}
+      .stat span{font-size:10.5px; font-weight:900; letter-spacing:.1em; color:var(--ink-faint); text-transform:uppercase;}
+      .newbest{
+        display:none; margin:10px auto 0; width:fit-content; padding:7px 14px; border-radius:999px;
+        background:rgba(255,182,46,.15); border:1.5px solid rgba(255,182,46,.6); color:var(--amber);
+        font-weight:900; font-size:13px;
+      }
+      .newbest.show{display:block;}
+      .big-btn{
+        width:100%; padding:16px; border-radius:16px; margin-top:12px;
+        font-family:"Bungee",sans-serif; font-size:16px; letter-spacing:.03em;
+        background:var(--cyan); color:#03222b; box-shadow:0 0 22px rgba(0,229,255,.35);
+      }
+      .big-btn:active{transform:scale(.985);}
+      .ghost-btn{
+        width:100%; padding:15px; border-radius:16px; margin-top:10px;
+        font-weight:900; font-size:15px; color:var(--cyan);
+        background:var(--panel2); border:1.5px solid var(--cyan-dim);
+      }
+      .ghost-btn:active{transform:scale(.985);}
+      .share-note{font-size:12.5px; font-weight:800; color:var(--green); min-height:18px; margin-top:8px;}
+      .funnel-card{
+        margin-top:18px; text-align:left; background:var(--panel); border:1.5px solid var(--line);
+        border-radius:var(--radius); padding:15px 16px; font-size:14px; font-weight:700; color:var(--ink-dim); line-height:1.55;
+      }
+      .funnel-card b{color:#fff;}
+      .funnel-card a{color:var(--cyan); font-weight:900; text-decoration:none; border-bottom:2px solid rgba(0,229,255,.4);}
+
+      /* ---------- runner ---------- */
+      .pu-legend{display:flex; flex-direction:column; gap:9px; margin:14px 0 4px;}
+      .pu-row{
+        display:flex; gap:11px; align-items:center; background:var(--panel);
+        border:1.5px solid var(--line); border-radius:14px; padding:10px 12px;
+      }
+      .pu-ico{
+        flex:0 0 38px; width:38px; height:38px; border-radius:11px;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .pu-ico.auto{background:rgba(0,229,255,.12); border:1.5px solid rgba(0,229,255,.45);}
+      .pu-ico.shield{background:rgba(61,255,158,.1); border:1.5px solid rgba(61,255,158,.45);}
+      .pu-ico.magnet{background:rgba(255,77,126,.1); border:1.5px solid rgba(255,77,126,.45);}
+      .pu-row b{display:block; font-size:14.5px; color:#fff;}
+      .pu-desc{display:block; font-size:12.5px; font-weight:700; color:var(--ink-dim); line-height:1.4; margin-top:1px;}
+      .r-best-row{
+        display:flex; align-items:center; justify-content:space-between;
+        background:var(--panel); border:1.5px solid var(--line); border-radius:14px;
+        padding:11px 14px; margin-top:14px; font-weight:900; color:var(--ink-dim); font-size:13px;
+        letter-spacing:.06em; text-transform:uppercase;
+      }
+      .r-best-row b{font-family:"Bungee",sans-serif; color:var(--cyan); font-size:19px; font-weight:400;}
+      .r-best-row .r-best-dist{font-size:12px; color:var(--ink-faint); letter-spacing:.02em; text-transform:none;}
+      .runner-stage{
+        position:relative; border-radius:18px; overflow:hidden;
+        border:1.5px solid var(--line); box-shadow:0 0 26px rgba(0,229,255,.12);
+        user-select:none; -webkit-user-select:none;
+      }
+      #run-canvas{display:block; width:100%; height:340px; touch-action:none; background:#060d1d;}
+      .buffs{position:absolute; top:10px; right:10px; display:flex; gap:6px; pointer-events:none;}
+      .buff{
+        min-width:30px; height:30px; padding:0 5px; border-radius:9px;
+        background:rgba(6,17,32,.82); border:1.5px solid var(--line);
+        display:flex; align-items:center; justify-content:center; opacity:.35;
+      }
+      .buff.on{opacity:1;}
+      .buff.b-auto.on{border-color:var(--cyan); box-shadow:0 0 10px rgba(0,229,255,.55);}
+      .buff.b-shield.on{border-color:var(--green); box-shadow:0 0 10px rgba(61,255,158,.5);}
+      .buff.b-magnet.on{border-color:var(--pink); box-shadow:0 0 10px rgba(255,77,126,.5);}
+      #buff-magnet-t{font-size:11px; font-weight:900; color:#fff; margin-left:3px;}
+      .run-toast{
+        position:absolute; left:50%; top:12px; transform:translate(-50%,-8px);
+        max-width:94%; text-align:center; pointer-events:none;
+        background:rgba(6,17,32,.94); border:1.5px solid var(--cyan-dim); color:var(--ink);
+        font-weight:800; font-size:13.5px; line-height:1.35; padding:9px 14px; border-radius:999px;
+        opacity:0; transition:opacity .18s ease, transform .18s ease;
+      }
+      .run-toast b{color:var(--cyan);}
+      .run-toast.show{opacity:1; transform:translate(-50%,0);}
+      .run-banner{
+        position:absolute; left:50%; top:58px; transform:translate(-50%,-6px) scale(.96);
+        pointer-events:none; text-align:center; padding:10px 18px; border-radius:14px;
+        background:linear-gradient(120deg, rgba(255,182,46,.92), rgba(255,77,126,.92));
+        color:#fff; opacity:0; transition:opacity .2s ease, transform .2s ease;
+        box-shadow:0 8px 24px rgba(0,0,0,.4);
+      }
+      .run-banner b{display:block; font-family:"Bungee",sans-serif; font-size:16px; letter-spacing:.02em;}
+      .run-banner span{font-size:11.5px; font-weight:800;}
+      .run-banner.show{opacity:1; transform:translate(-50%,0) scale(1);}
+      .run-hint{
+        position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+        font-family:"Bungee",sans-serif; font-size:12.5px; letter-spacing:.05em; color:#fff;
+        text-shadow:0 0 12px rgba(0,229,255,.8); white-space:nowrap; pointer-events:none; opacity:0;
+      }
+      .run-hint.show{opacity:.95; animation:hintPulse 1.1s ease-in-out infinite;}
+      @keyframes hintPulse{50%{opacity:.4;}}
+      .coin-dot{
+        width:13px; height:13px; border-radius:50%; flex:0 0 auto;
+        background:radial-gradient(circle at 35% 35%, #ffe08a, var(--amber));
+        box-shadow:0 0 8px rgba(255,182,46,.7);
+      }
+      .r-controls-note{text-align:center; font-size:12.5px; font-weight:800; color:var(--ink-faint); margin:10px 0 0;}
+
+      /* ---------- tycoon ---------- */
+      .pu-ico.stock{background:rgba(255,182,46,.1); border:1.5px solid rgba(255,182,46,.45);}
+      .pu-ico.trans{background:rgba(255,77,126,.1); border:1.5px solid rgba(255,77,126,.45);}
+      .t-clock-wrap{display:flex; justify-content:center; margin:2px 0 10px;}
+      .t-clock{
+        background:var(--panel2); border:1.5px solid var(--cyan-dim); border-radius:14px;
+        padding:7px 26px 9px; text-align:center; box-shadow:0 0 18px rgba(0,229,255,.18);
+      }
+      .t-clock b{font-family:"Bungee",sans-serif; font-size:25px; color:#fff; font-weight:400; letter-spacing:.03em; display:block; line-height:1.1;}
+      .t-clock small{font-size:9.5px; letter-spacing:.18em; color:var(--ink-faint); font-weight:900; text-transform:uppercase;}
+      .t-day-track{height:7px; border-radius:99px; background:#0b1c33; border:1px solid var(--line); overflow:hidden; margin-bottom:12px;}
+      .t-day-fill{height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg, var(--amber), var(--pink)); transition:width .3s linear;}
+      .tools-bar{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:6px;}
+      .tool-btn{
+        display:flex; gap:9px; align-items:center; text-align:left;
+        background:linear-gradient(160deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:14px; padding:10px 11px; position:relative; overflow:hidden;
+      }
+      .tool-btn:active{transform:scale(.98);}
+      .tool-btn .pu-ico{flex-basis:36px; width:36px; height:36px; border-radius:10px;}
+      .tool-btn b{display:block; font-size:13px; color:#fff; line-height:1.2;}
+      .tool-btn .t-state{display:block; font-size:10.5px; font-weight:900; color:var(--ink-dim); letter-spacing:.02em; margin-top:2px; line-height:1.3;}
+      .tool-btn.deploying{border-color:rgba(255,182,46,.7);}
+      .tool-btn.deploying .t-state{color:var(--amber);}
+      .tool-btn.on{border-color:rgba(61,255,158,.65); box-shadow:0 0 14px rgba(61,255,158,.15);}
+      .tool-btn.on .t-state{color:var(--green);}
+      .tool-btn .t-prog{position:absolute; left:0; bottom:0; height:4px; width:0%; background:var(--amber); transition:width .12s linear;}
+      .tool-btn[disabled]{cursor:default;}
+      .t-queue{display:flex; flex-direction:column;}
+      .t-queue-empty{
+        text-align:center; font-weight:800; font-size:13.5px; color:var(--ink-faint);
+        border:1.5px dashed var(--line); border-radius:14px; padding:16px 12px;
+      }
+      .task{
+        width:100%; text-align:left; display:block; position:relative;
+        background:linear-gradient(160deg, var(--panel2), var(--panel));
+        border:1.5px solid var(--line); border-radius:14px; padding:11px 13px; margin-bottom:9px;
+        transition:border-color .15s ease;
+      }
+      .task:active{transform:scale(.99);}
+      .task.urgent{border-color:rgba(255,84,112,.7); box-shadow:0 0 14px rgba(255,84,112,.18);}
+      .task.doing{border-color:var(--cyan);}
+      .task.auto{border-color:rgba(61,255,158,.55);}
+      .task .t-top{display:flex; gap:10px; align-items:center;}
+      .task .t-ico{
+        flex:0 0 38px; width:38px; height:38px; border-radius:11px;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .task .t-ico.c-counter{background:rgba(0,229,255,.12); border:1.5px solid rgba(0,229,255,.45);}
+      .task .t-ico.c-dm{background:rgba(255,77,126,.1); border:1.5px solid rgba(255,77,126,.45);}
+      .task .t-ico.c-phone{background:rgba(61,255,158,.1); border:1.5px solid rgba(61,255,158,.45);}
+      .task .t-ico.c-stock{background:rgba(255,182,46,.1); border:1.5px solid rgba(255,182,46,.45);}
+      .task h4{margin:0; font-size:14.5px; color:#fff; font-weight:900; line-height:1.25;}
+      .task .t-sub{font-size:12.5px; font-weight:700; color:var(--ink-dim); line-height:1.4; margin-top:1px;}
+      .task .t-chip{
+        margin-left:auto; flex:0 0 auto; font-size:10px; font-weight:900; letter-spacing:.04em;
+        padding:4px 8px; border-radius:999px; background:rgba(0,229,255,.12); color:var(--cyan);
+        border:1px solid rgba(0,229,255,.35); text-align:center; line-height:1.35;
+      }
+      .task .t-chip.es{background:rgba(255,182,46,.13); color:var(--amber); border-color:rgba(255,182,46,.45);}
+      .patience{display:block; height:6px; border-radius:99px; background:#0b1c33; overflow:hidden; margin-top:9px;}
+      .patience i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg, var(--cyan-dim), var(--cyan)); transition:width .12s linear;}
+      .patience i.mid{background:linear-gradient(90deg, #b57a12, var(--amber));}
+      .patience i.low{background:linear-gradient(90deg, #c22e4a, var(--red));}
+      .patience i.doing{background:linear-gradient(90deg, var(--cyan-dim), var(--cyan));}
+      .patience i.auto{background:linear-gradient(90deg, #1d9e63, var(--green));}
+      .task .t-status{display:block; font-size:11.5px; font-weight:900; color:var(--cyan); margin-top:7px; min-height:14px; line-height:1.35;}
+      .task .t-status:empty{display:none;}
+      .task.auto .t-status{color:var(--green);}
+      .task .phrase{
+        display:none; margin-top:8px; background:rgba(255,182,46,.1);
+        border:1px dashed rgba(255,182,46,.55); border-radius:10px;
+        padding:7px 10px; font-size:12.5px; font-weight:800; color:#ffd9a0; line-height:1.45;
+      }
+      .task.phrasing .phrase{display:block;}
+      .stars{font-size:32px; letter-spacing:.22em; color:var(--amber); text-align:center; margin-top:12px; text-shadow:0 0 16px rgba(255,182,46,.45);}
+      .stars .off{color:#22405e; text-shadow:none;}
+      .hours-hero{text-align:center; margin:14px 0 2px;}
+      .hours-hero b{
+        font-family:"Bungee",sans-serif; font-size:52px; font-weight:400; color:var(--green);
+        text-shadow:0 0 22px rgba(61,255,158,.45); line-height:1;
+      }
+      .hours-hero b small{font-size:24px; color:var(--ink);}
+      .hours-hero .hours-lbl{display:block; margin-top:5px; font-size:11px; font-weight:900; letter-spacing:.16em; color:var(--ink-faint); text-transform:uppercase;}
+      .hours-sub{text-align:center; font-size:13px; font-weight:800; color:var(--ink-dim); margin:6px 0 0;}
+      .t-early-note{
+        display:none; margin:12px auto 0; width:fit-content; max-width:100%;
+        padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:900;
+        background:rgba(255,84,112,.12); border:1.5px solid rgba(255,84,112,.5); color:#ffb3c0;
+      }
+      .t-early-note.show{display:block;}
+      .hook-card{
+        margin-top:18px; text-align:left; background:var(--panel);
+        border:1.5px solid var(--cyan-dim); border-radius:var(--radius);
+        padding:16px; box-shadow:0 0 22px rgba(0,229,255,.12);
+      }
+      .hook-card .hook-bit{display:flex; gap:11px; align-items:center;}
+      .hook-card .bit-wrap{flex:0 0 54px;}
+      .hook-card .hook-bit p{margin:0; font-size:16px; font-weight:900; line-height:1.4; color:#fff;}
+      .hook-btn{display:block; text-align:center; text-decoration:none; margin-top:14px;}
+      .hook-quiet{
+        display:block; text-align:center; margin-top:13px;
+        font-size:13.5px; font-weight:800; color:var(--ink-dim);
+        text-decoration:underline; text-underline-offset:3px;
+      }
+
+      /* ---------- tab bar ---------- */
+      .tabbar{
+        position:fixed; left:0; right:0; bottom:0; z-index:20;
+        background:rgba(5,11,22,.92); backdrop-filter:blur(10px);
+        border-top:1.5px solid var(--line);
+        padding-bottom:env(safe-area-inset-bottom);
+      }
+      .tabbar .row{max-width:480px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr 1fr; height:var(--tab-h);}
+      .tab{
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+        font-size:11.5px; font-weight:900; letter-spacing:.06em; color:var(--ink-dim); text-decoration:none;
+      }
+      .tab svg{display:block;}
+      .tab.on{color:var(--cyan);}
+      .tab:active{color:var(--cyan);}
+    </style>
+  </head>
+  <body>
+
+    <!-- Bit, drawn once as an SVG symbol and reused across screens -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="bitBot" viewBox="0 0 120 132">
+          <!-- antenna -->
+          <line x1="60" y1="16" x2="60" y2="30" stroke="#9fb6c9" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="60" cy="11" r="6.5" fill="#00e5ff"/>
+          <circle cx="60" cy="11" r="11" fill="#00e5ff" opacity=".18"/>
+          <!-- ears -->
+          <rect x="8" y="52" width="8" height="20" rx="4" fill="#c7d8e6"/>
+          <rect x="104" y="52" width="8" height="20" rx="4" fill="#c7d8e6"/>
+          <!-- head -->
+          <rect x="14" y="28" width="92" height="66" rx="20" fill="#f4f9fc" stroke="#c7d8e6" stroke-width="2"/>
+          <!-- face screen -->
+          <rect x="23" y="37" width="74" height="48" rx="13" fill="#07182b"/>
+          <!-- eyes -->
+          <circle cx="47" cy="57" r="6" fill="#00e5ff"/>
+          <circle cx="73" cy="57" r="6" fill="#00e5ff"/>
+          <circle cx="47" cy="57" r="11" fill="#00e5ff" opacity=".16"/>
+          <circle cx="73" cy="57" r="11" fill="#00e5ff" opacity=".16"/>
+          <!-- smile -->
+          <path d="M48 70 Q60 79 72 70" fill="none" stroke="#00e5ff" stroke-width="3.4" stroke-linecap="round"/>
+          <!-- body -->
+          <path d="M34 96 h52 l5 30 a6 6 0 0 1 -6 7 H35 a6 6 0 0 1 -6 -7 z" fill="#eef5fa" stroke="#c7d8e6" stroke-width="2"/>
+          <!-- vintage mic emblem on chest -->
+          <g transform="translate(60 112)">
+            <rect x="-5" y="-11" width="10" height="15" rx="5" fill="#0aa7bd"/>
+            <path d="M-9 -5 a9 9 0 0 0 18 0" fill="none" stroke="#0aa7bd" stroke-width="2.4"/>
+            <line x1="0" y1="6" x2="0" y2="11" stroke="#0aa7bd" stroke-width="2.4" stroke-linecap="round"/>
+            <line x1="-5" y1="11" x2="5" y2="11" stroke="#0aa7bd" stroke-width="2.4" stroke-linecap="round"/>
+          </g>
+        </symbol>
+        <symbol id="flameIco" viewBox="0 0 24 24">
+          <path d="M12 2c1 3.2-.6 4.9-2 6.4C8.7 9.8 7.5 11.3 7.5 14a4.5 4.5 0 0 0 9 0c0-1.2-.5-2.2-1.1-3.2-.5 1-1.2 1.7-2.1 2.1.4-2.9.2-6.9-1.3-10.9z" fill="#ff7a29"/>
+          <path d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.1.6-1.9 1.2-2.6.5-.6 1-1.2 1.4-2 .4.8.9 1.4 1.4 2 .6.7 1.2 1.5 1.2 2.6A2.6 2.6 0 0 1 12 21z" fill="#ffc93c"/>
+        </symbol>
+      </defs>
+    </svg>
+
+    <div id="app">
+
+      <!-- ================= LOBBY ================= -->
+      <section class="view active" id="view-lobby">
+        <div class="marquee">
+          <div class="over" data-i18n="brand">AiMediaCentral presents</div>
+          <h1>BIT'S BARRIO<br /><span class="cy">ARCADE</span></h1>
+        </div>
+
+        <div class="bit-stage">
+          <div class="bit-wrap bit-bob"><svg viewBox="0 0 120 132" role="img" aria-label="Bit the robot"><use href="#bitBot"/></svg></div>
+          <div class="bubble">
+            <div class="who">Bit</div>
+            <p data-i18n="welcome">¡Órale, let me show you!</p>
+            <p class="small" data-i18n="welcomeSub">Pick a cabinet and let's play. Todo bilingüe — EN / ES.</p>
+          </div>
+        </div>
+
+        <div class="cab-label" data-i18n="cabinets">Game cabinets · Cabinas</div>
+
+        <button class="cabinet live" id="cab-quiz" type="button">
+          <span class="cab-icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.8.3-1.1.8-1.1 1.8"/><circle cx="12" cy="17" r=".4" fill="#00e5ff"/></svg>
+          </span>
+          <span class="cab-body">
+            <h3>¡Órale! Quiz</h3>
+            <p data-i18n="quizBlurb">Bilingual AI trivia for the whole barrio — kids to abuelos.</p>
+          </span>
+          <span class="cab-tag play" data-i18n="play">PLAY</span>
+        </button>
+
+        <button class="cabinet live" id="cab-runner" type="button">
+          <span class="cab-icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="rgba(0,229,255,.18)" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.8 13.6h6L9.4 22l8.4-11.6h-6.2L13 2z"/></svg>
+          </span>
+          <span class="cab-body">
+            <h3>Bit Runner</h3>
+            <p data-i18n="runnerBlurb">Bit sprints el barrio, grabbing time back block by block.</p>
+          </span>
+          <span class="cab-tag play" data-i18n="play">PLAY</span>
+        </button>
+
+        <button class="cabinet live" id="cab-tycoon" type="button">
+          <span class="cab-icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.2-4h13.6L20 9"/><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 20v-5h6v5"/></svg>
+          </span>
+          <span class="cab-body">
+            <h3>La Tiendita Tycoon</h3>
+            <p data-i18n="tycoonBlurb">Run Don Mike's shop for a day — with AI on your team.</p>
+          </span>
+          <span class="cab-tag play" data-i18n="play">PLAY</span>
+        </button>
+
+        <p class="free-note" data-i18n="freeNote"><b>Free to play.</b> No sign-up — just tap and learn something new.</p>
+        <p class="brandline">AiMediaCentral LLC · Applied AI</p>
+      </section>
+
+      <!-- ================= QUIZ HOME ================= -->
+      <section class="view" id="view-quizhome">
+        <div class="topbar">
+          <button class="back-btn" id="btn-back-lobby" type="button" aria-label="Back to lobby">←</button>
+          <h2>¡Órale! Quiz</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en" class="on">EN</button>
+            <button type="button" id="lang-es">ES</button>
+          </div>
+        </div>
+        <p class="quiz-sub" data-i18n="quizSub">Ten questions, one Bit, zero pressure. Every answer teaches you something real about AI — in English o en español.</p>
+
+        <button class="daily-btn" id="btn-daily" type="button">
+          <span class="d-ico" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb62e" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M12 13l1.2 2.4 2.6.4-1.9 1.9.5 2.6L12 19l-2.4 1.3.5-2.6-1.9-1.9 2.6-.4z" fill="#ffb62e" stroke="none"/></svg>
+          </span>
+          <span>
+            <h3 data-i18n="dailyTitle">Daily Challenge · Reto del día</h3>
+            <p data-i18n="dailySub">One mixed set for everybody — same questions all day.</p>
+          </span>
+          <span class="d-best"><span data-i18n="best">Best</span><b id="daily-best">—</b></span>
+        </button>
+
+        <div class="tier-label" data-i18n="pickTier">Pick your level · Elige tu nivel</div>
+        <div id="tier-list"></div>
+
+        <div class="how-card" data-i18n="how">
+          <b>How it plays:</b> 10 questions · 20 seconds each · <b>100 pts</b> per correct answer, plus a <b>streak bonus</b> when you stack 3 or more in a row. Bit explains every answer — right or wrong, you leave smarter.
+        </div>
+      </section>
+
+      <!-- ================= GAME ================= -->
+      <section class="view" id="view-game">
+        <div class="topbar">
+          <button class="back-btn" id="btn-quit" type="button" aria-label="Quit round">✕</button>
+          <h2 id="game-title">¡Órale! Quiz</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en2" class="on">EN</button>
+            <button type="button" id="lang-es2">ES</button>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="hud-box streak-box" id="streak-box">
+            <span class="flame" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24"><use href="#flameIco"/></svg></span>
+            <span><small data-i18n="streak">Streak</small><span id="streak-num">0</span></span>
+          </div>
+          <div class="hud-box score-box">
+            <span><small data-i18n="score">Score</small><span id="score-num">0</span></span>
+          </div>
+        </div>
+
+        <div class="q-progress"><span id="q-count">Q 1 / 10</span><span id="q-tier-name"></span></div>
+        <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+
+        <div class="q-bit">
+          <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+          <div class="bubble"><div class="who">Bit</div><p id="bit-line">¡Órale, let me show you!</p></div>
+        </div>
+
+        <div class="q-card">
+          <p class="q-text" id="q-text"></p>
+          <div class="answers" id="answers"></div>
+          <div class="explain" id="explain">
+            <div class="verdict" id="verdict"></div>
+            <div id="explain-text"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= RESULTS ================= -->
+      <section class="view" id="view-results">
+        <div class="results">
+          <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+          <h2 data-i18n="resultsTitle">Round complete!</h2>
+          <p class="reaction" id="reaction"></p>
+          <div class="stat-grid">
+            <div class="stat"><b id="final-score">0</b><span data-i18n="scoreLbl">Score</span></div>
+            <div class="stat"><b id="final-correct">0/10</b><span data-i18n="correctLbl">Correct</span></div>
+            <div class="stat"><b id="final-streak">0</b><span data-i18n="streakLbl">Best streak</span></div>
+          </div>
+          <div class="newbest" id="newbest" data-i18n="newBest">★ New best score!</div>
+          <button class="big-btn" id="btn-share" type="button" data-i18n="share">Share my score</button>
+          <div class="share-note" id="share-note" role="status"></div>
+          <button class="ghost-btn" id="btn-again" type="button" data-i18n="again">Play again</button>
+          <button class="ghost-btn" id="btn-lobby2" type="button" data-i18n="toLobby">Back to lobby</button>
+          <div class="funnel-card" id="funnel-card"></div>
+        </div>
+      </section>
+
+      <!-- ================= RUNNER HOME ================= -->
+      <section class="view" id="view-runnerhome">
+        <div class="topbar">
+          <button class="back-btn" id="btn-back-lobby2" type="button" aria-label="Back to lobby">←</button>
+          <h2>Bit Runner</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en3" class="on">EN</button>
+            <button type="button" id="lang-es3">ES</button>
+          </div>
+        </div>
+
+        <div class="bit-stage">
+          <div class="bit-wrap bit-bob"><svg viewBox="0 0 120 132" role="img" aria-label="Bit the robot"><use href="#bitBot"/></svg></div>
+          <div class="bubble">
+            <div class="who">Bit</div>
+            <p data-i18n="runnerBitLine">Ready? Thumb warmed up? Let's grab some time back — ¡vámonos!</p>
+          </div>
+        </div>
+
+        <p class="quiz-sub" data-i18n="runnerSub">Bit sprints the neon barrio, block after block. Grab coins and AI power-ups, dodge the busywork — every run gives you a little time back.</p>
+
+        <div class="pu-legend">
+          <div class="pu-row">
+            <span class="pu-ico auto" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9.5L5 19.5V5z"/><circle cx="8.6" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="12" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="15.4" cy="10.5" r=".6" fill="#00e5ff"/></svg></span>
+            <span><b>Auto-reply · Respuesta automática</b><span class="pu-desc" data-i18n="puAutoDesc">Clears the next obstacle for you — hands-free.</span></span>
+          </div>
+          <div class="pu-row">
+            <span class="pu-ico shield" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#3dff9e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg></span>
+            <span><b>Book cita · Reserva tu cita</b><span class="pu-desc" data-i18n="puShieldDesc">Books your cita and shields you from one hit.</span></span>
+          </div>
+          <div class="pu-row">
+            <span class="pu-ico magnet" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ff4d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path d="M18.2 6.8a7.4 7.4 0 0 1 0 10.4"/></svg></span>
+            <span><b>Speaker magnet · Bocina imán</b><span class="pu-desc" data-i18n="puMagnetDesc">Nearby coins fly to Bit for 6 seconds.</span></span>
+          </div>
+        </div>
+
+        <div class="how-card" data-i18n="howRunner"><b>Controls:</b> tap anywhere on the street (or press Space / ↑) to jump — tap again mid-air for a <b>double jump</b>. Coins are <b>+10 pts</b>. Score = distance + coin bonus. Every 500 m Bit Ejercicio flashes a stretch break — keep moving!</div>
+
+        <div class="r-best-row">
+          <span data-i18n="best">Best</span>
+          <span><b id="runner-best">—</b> <span class="r-best-dist" id="runner-best-dist"></span></span>
+        </div>
+        <button class="big-btn" id="btn-start-run" type="button" data-i18n="rStart">START RUN</button>
+      </section>
+
+      <!-- ================= RUNNER GAME ================= -->
+      <section class="view" id="view-runner">
+        <div class="topbar">
+          <button class="back-btn" id="btn-r-quit" type="button" aria-label="Quit run">✕</button>
+          <h2>Bit Runner</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en4" class="on">EN</button>
+            <button type="button" id="lang-es4">ES</button>
+          </div>
+        </div>
+
+        <div class="hud">
+          <div class="hud-box">
+            <span><small data-i18n="rDistLbl">Distance</small><span id="r-dist">0 m</span></span>
+          </div>
+          <div class="hud-box">
+            <span class="coin-dot" aria-hidden="true"></span>
+            <span><small data-i18n="rCoinsLbl">Coins</small><span id="r-coins">0</span></span>
+          </div>
+          <div class="hud-box" style="margin-left:auto">
+            <span><small data-i18n="rSpeedLbl">Speed</small><span><span id="r-speed">11</span> km/h</span></span>
+          </div>
+        </div>
+
+        <div class="runner-stage" id="runner-stage">
+          <canvas id="run-canvas" width="320" height="340"></canvas>
+          <div class="buffs" aria-hidden="true">
+            <span class="buff b-auto" id="buff-auto"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9.5L5 19.5V5z"/></svg></span>
+            <span class="buff b-shield" id="buff-shield"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3dff9e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
+            <span class="buff b-magnet" id="buff-magnet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ff4d7e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3.5L12 18V6l-4.5 4H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/></svg><span id="buff-magnet-t"></span></span>
+          </div>
+          <div class="run-toast" id="run-toast" role="status"></div>
+          <div class="run-banner" id="run-banner"><b>¡Muévete! / Keep moving!</b><span data-i18n="rStretchSub">+500 m — stretch break!</span></div>
+          <div class="run-hint" id="run-hint" data-i18n="rTapHint">TAP TO JUMP · TAP AGAIN = DOUBLE JUMP</div>
+        </div>
+        <p class="r-controls-note" data-i18n="rControlsNote">Tap the street to jump — Space / ↑ works too.</p>
+      </section>
+
+      <!-- ================= RUNNER GAME OVER ================= -->
+      <section class="view" id="view-runover">
+        <div class="results">
+          <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+          <h2 data-i18n="rOverTitle">Run complete!</h2>
+          <p class="reaction" id="r-reaction"></p>
+          <div class="stat-grid">
+            <div class="stat"><b id="r-final-score">0</b><span data-i18n="scoreLbl">Score</span></div>
+            <div class="stat"><b id="r-final-dist">0 m</b><span data-i18n="rDistLbl">Distance</span></div>
+            <div class="stat"><b id="r-final-coins">0</b><span data-i18n="rCoinsLbl">Coins</span></div>
+          </div>
+          <div class="newbest" id="r-newbest" data-i18n="newBest">★ New best score!</div>
+          <button class="big-btn" id="btn-r-share" type="button" data-i18n="share">Share my score</button>
+          <div class="share-note" id="r-share-note" role="status"></div>
+          <button class="ghost-btn" id="btn-r-again" type="button" data-i18n="rAgain">Run again</button>
+          <button class="ghost-btn" id="btn-r-lobby" type="button" data-i18n="toLobby">Back to lobby</button>
+          <div class="funnel-card" id="r-funnel-card"></div>
+        </div>
+      </section>
+
+      <!-- ================= TYCOON HOME ================= -->
+      <section class="view" id="view-tycoonhome">
+        <div class="topbar">
+          <button class="back-btn" id="btn-back-lobby3" type="button" aria-label="Back to lobby">←</button>
+          <h2>La Tiendita Tycoon</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en5" class="on">EN</button>
+            <button type="button" id="lang-es5">ES</button>
+          </div>
+        </div>
+
+        <div class="bit-stage">
+          <div class="bit-wrap bit-bob"><svg viewBox="0 0 120 132" role="img" aria-label="Bit the robot"><use href="#bitBot"/></svg></div>
+          <div class="bubble">
+            <div class="who">Bit</div>
+            <p data-i18n="tycoonBitLine">¡Órale, let me show you! Don Mike needs a hand at La Tiendita today — you in?</p>
+          </div>
+        </div>
+
+        <p class="quiz-sub" data-i18n="tSub">One full shop day, 9 AM–3 PM. Customers at the counter, DMs, ringing phones and emptying shelves — all at once. Deploy Bit's AI tools early, or try to do everything by hand.</p>
+
+        <div class="tier-label" data-i18n="tToolsLabel">Meet your AI team · Tu equipo de IA</div>
+        <div class="pu-legend">
+          <div class="pu-row">
+            <span class="pu-ico auto" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9.5L5 19.5V5z"/><circle cx="8.6" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="12" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="15.4" cy="10.5" r=".6" fill="#00e5ff"/></svg></span>
+            <span><b>Auto-reply · Respuesta automática</b><span class="pu-desc" data-i18n="tToolAutoDesc">20s setup, once — then every DM answers itself.</span></span>
+          </div>
+          <div class="pu-row">
+            <span class="pu-ico shield" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#3dff9e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/></svg></span>
+            <span><b>Booking assistant · Asistente de citas</b><span class="pu-desc" data-i18n="tToolBookDesc">20s setup, once — answers the phone and books citas for you.</span></span>
+          </div>
+          <div class="pu-row">
+            <span class="pu-ico trans" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ff4d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h9M8.5 4v2c0 3.5-2 6.5-4.5 8.5M6 9.5c1.2 2.3 3.4 4.4 6 5.5"/><path d="M12.5 21l4.5-10 4.5 10M14.2 17.5h5.6"/></svg></span>
+            <span><b>Translator · Traductor</b><span class="pu-desc" data-i18n="tToolTransDesc">15s setup, once — counter customers served instantly, EN or ES.</span></span>
+          </div>
+          <div class="pu-row">
+            <span class="pu-ico stock" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffb62e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span>
+            <span><b>Stock alert · Alerta de inventario</b><span class="pu-desc" data-i18n="tToolStockDesc">15s setup, once — flags a shelf 30s before it empties, so restock is a quick 2s tap instead of a lost sale.</span></span>
+          </div>
+        </div>
+
+        <div class="how-card" data-i18n="howTycoon"><b>How it plays:</b> tap a task to handle it yourself — about <b>3 seconds</b> each, and you can only do <b>one thing at a time</b>. Deploying a tool keeps your hands busy for its whole setup. If a task's patience bar runs out, that customer walks — <b>5 walk-outs</b> and Don Mike closes early. No Translator? Spanish-speaking customers take a slow <b>phrase-card</b> serve. AI helps — humans still can.</div>
+
+        <div class="r-best-row">
+          <span data-i18n="tBestDay">Best day</span>
+          <span><b id="t-best-val">—</b></span>
+        </div>
+        <button class="big-btn" id="btn-start-day" type="button" data-i18n="tStart">OPEN THE SHOP</button>
+      </section>
+
+      <!-- ================= TYCOON GAME ================= -->
+      <section class="view" id="view-tycoon">
+        <div class="topbar">
+          <button class="back-btn" id="btn-t-quit" type="button" aria-label="Quit day">✕</button>
+          <h2>La Tiendita Tycoon</h2>
+          <div class="lang-toggle" role="group" aria-label="Language">
+            <button type="button" id="lang-en6" class="on">EN</button>
+            <button type="button" id="lang-es6">ES</button>
+          </div>
+        </div>
+
+        <div class="t-clock-wrap">
+          <div class="t-clock"><small data-i18n="tClockLbl">Shop clock</small><b id="t-clock">9:00 AM</b></div>
+        </div>
+        <div class="t-day-track"><div class="t-day-fill" id="t-day-fill"></div></div>
+
+        <div class="hud">
+          <div class="hud-box">
+            <span><small data-i18n="tServedHud">Served</small><span id="t-served">0</span></span>
+          </div>
+          <div class="hud-box">
+            <span><small data-i18n="tWalkedHud">Walked away</small><span id="t-unhappy">0</span></span>
+          </div>
+          <div class="hud-box" style="margin-left:auto">
+            <span><small data-i18n="tSavedHud">AI saved</small><span id="t-saved">0.0 h</span></span>
+          </div>
+        </div>
+
+        <div class="q-bit">
+          <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+          <div class="bubble"><div class="who">Bit</div><p id="t-bitline">¡Órale, let me show you!</p></div>
+        </div>
+
+        <div class="cab-label" data-i18n="tToolsBar" style="margin-top:4px">AI tools — tap one to deploy it</div>
+        <div class="tools-bar" id="tools-bar"></div>
+
+        <div class="cab-label" data-i18n="tQueue">Task queue</div>
+        <div class="t-queue" id="t-queue"></div>
+        <div class="t-queue-empty" id="t-queue-empty" data-i18n="tQueueEmpty">All quiet… for now.</div>
+      </section>
+
+      <!-- ================= TYCOON REPORT ================= -->
+      <section class="view" id="view-tycoonreport">
+        <div class="results">
+          <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+          <h2 id="t-report-title" data-i18n="tReportTitle">Day complete!</h2>
+          <div class="stars" id="t-stars" aria-label="Star rating"></div>
+          <p class="reaction" id="t-reaction"></p>
+          <div class="t-early-note" id="t-early-note"></div>
+
+          <div class="hours-hero">
+            <b><span id="t-hours">0.0</span> <small>hrs</small></b>
+            <span class="hours-lbl" data-i18n="tHoursLbl">Hours saved by your AI team</span>
+          </div>
+          <p class="hours-sub" id="t-hours-sub"></p>
+
+          <div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="stat"><b id="tr-served">0</b><span data-i18n="tServed">Customers served</span></div>
+            <div class="stat"><b id="tr-booked">0</b><span data-i18n="tBooked">Citas booked</span></div>
+            <div class="stat"><b id="tr-answered">0</b><span data-i18n="tAnswered">Messages answered</span></div>
+            <div class="stat"><b id="tr-restocked">0</b><span data-i18n="tRestocked">Shelves restocked</span></div>
+            <div class="stat"><b id="tr-auto">0</b><span data-i18n="tAutoTasks">Cleared by AI</span></div>
+            <div class="stat"><b id="tr-unhappy">0</b><span data-i18n="tWalked">Walked away</span></div>
+          </div>
+          <div class="newbest" id="t-newbest" data-i18n="tNewBestDay">★ Best day yet!</div>
+
+          <div class="hook-card">
+            <div class="hook-bit">
+              <div class="bit-wrap"><svg viewBox="0 0 120 132" role="img" aria-label="Bit"><use href="#bitBot"/></svg></div>
+              <p data-i18n="tHookLine">¿Quieres esto en tu negocio de verdad? / Want this in your real business?</p>
+            </div>
+            <a class="big-btn hook-btn" href="https://cal.com/aimediacentral/30min" target="_blank" rel="noopener" data-i18n="tHookBtn">Book a free discovery call</a>
+            <a class="hook-quiet" href="https://aimediacentral.com#shop" target="_blank" rel="noopener" data-i18n="tHookShop">See the gadgets from today's shop</a>
+          </div>
+
+          <button class="ghost-btn" id="btn-t-again" type="button" data-i18n="tAgain">Play another day</button>
+          <button class="ghost-btn" id="btn-t-lobby" type="button" data-i18n="toLobby">Back to lobby</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= TAB BAR ================= -->
+    <nav class="tabbar" aria-label="Main">
+      <div class="row">
+        <a class="tab on" href="#" id="tab-home">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>
+          <span data-i18n="tabHome">Home</span>
+        </a>
+        <a class="tab" href="https://aimediacentral.com#shop" target="_blank" rel="noopener">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l1.2-4h13.6L20 9"/><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 20v-5h6v5"/></svg>
+          <span data-i18n="tabShop">Shop</span>
+        </a>
+        <a class="tab" href="https://cal.com/aimediacentral/30min" target="_blank" rel="noopener">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.25a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9z"/></svg>
+          <span data-i18n="tabCall">Book a Call</span>
+        </a>
+      </div>
+    </nav>
+
+    <script>
+    "use strict";
+
+    /* ============ UI STRINGS ============ */
+    var UI = {
+      en: {
+        brand: "AiMediaCentral presents",
+        welcome: "¡Órale, let me show you!",
+        welcomeSub: "Pick a cabinet and let's play. Todo bilingüe — EN / ES.",
+        cabinets: "Game cabinets · Cabinas",
+        quizBlurb: "Bilingual AI trivia for the whole barrio — kids to abuelos.",
+        runnerBlurb: "Bit sprints el barrio, grabbing time back block by block.",
+        tycoonBlurb: "Run Don Mike's shop for a day — with AI on your team.",
+        play: "PLAY",
+        soon: "Coming soon<br />Próximamente",
+        soon2: "Coming soon<br />Próximamente",
+        freeNote: "<b>Free to play.</b> No sign-up — just tap and learn something new.",
+        quizSub: "Ten questions, one Bit, zero pressure. Every answer teaches you something real about AI — in English o en español.",
+        dailyTitle: "Daily Challenge · Reto del día",
+        dailySub: "One mixed set for everybody — same questions all day.",
+        best: "Best",
+        pickTier: "Pick your level · Elige tu nivel",
+        how: "<b>How it plays:</b> 10 questions · 20 seconds each · <b>100 pts</b> per correct answer, plus a <b>streak bonus</b> when you stack 3 or more in a row. Bit explains every answer — right or wrong, you leave smarter.",
+        streak: "Streak",
+        score: "Score",
+        resultsTitle: "Round complete!",
+        scoreLbl: "Score",
+        correctLbl: "Correct",
+        streakLbl: "Best streak",
+        newBest: "★ New best score!",
+        share: "Share my score",
+        again: "Play again",
+        toLobby: "Back to lobby",
+        tabHome: "Home",
+        tabShop: "Shop",
+        tabCall: "Book a Call",
+        correctWord: "¡Correcto!",
+        wrongWord: "Not quite",
+        timeoutWord: "Time's up!",
+        qOf: "Q {n} / 10",
+        dailyName: "Daily Challenge",
+        copied: "Copied! Paste it anywhere — WhatsApp, TikTok, Stories.",
+        copyFail: "Copy this: ",
+        bitThink: "Think fast, familia…",
+        bitGood: ["¡Eso! On fire!", "¡Órale! That's the one!", "Look at you — sharp!", "¡Así se hace!"],
+        bitBad: ["Good try — now you know!", "¡Échale ganas! Bit believes in you.", "That's how we learn, familia."],
+        reactions: [
+          "¡Órale! PERFECT round. The whole barrio heard about this one — you're officially an AI natural.",
+          "¡Órale! You lit up the board! One or two away from legendary — run it back.",
+          "Strong round, familia! You're getting sharper every game — that's exactly how this works.",
+          "Good reps! Every answer — right or wrong — just taught you something real. Bit's proud.",
+          "First steps count the most. You just learned more about AI than most people do all week. Otra vez!"
+        ],
+        runnerBitLine: "Ready? Thumb warmed up? Let's grab some time back — ¡vámonos!",
+        runnerSub: "Bit sprints the neon barrio, block after block. Grab coins and AI power-ups, dodge the busywork — every run gives you a little time back.",
+        puAutoDesc: "Clears the next obstacle for you — hands-free.",
+        puShieldDesc: "Books your cita and shields you from one hit.",
+        puMagnetDesc: "Nearby coins fly to Bit for 6 seconds.",
+        howRunner: "<b>Controls:</b> tap anywhere on the street (or press Space / ↑) to jump — tap again mid-air for a <b>double jump</b>. Coins are <b>+10 pts</b>. Score = distance + coin bonus. Every 500 m Bit Ejercicio flashes a stretch break — keep moving!",
+        rStart: "START RUN",
+        rDistLbl: "Distance",
+        rCoinsLbl: "Coins",
+        rSpeedLbl: "Speed",
+        rOverTitle: "Run complete!",
+        rAgain: "Run again",
+        rTapHint: "TAP TO JUMP · TAP AGAIN = DOUBLE JUMP",
+        rStretchSub: "+500 m — stretch break!",
+        rControlsNote: "Tap the street to jump — Space / ↑ works too.",
+        puAutoFx: "the next obstacle handles itself!",
+        puShieldFx: "shield up — one hit is on the house!",
+        puMagnetFx: "coins fly to Bit for 6 seconds!",
+        autoUsed: "Auto-reply handled that one!",
+        shieldUsed: "Book cita shield — saved!",
+        runnerReactions: [
+          "¡Órale! You FLEW through el barrio — Bit can barely keep up with you!",
+          "¡Qué corrida! The whole block is cheering — run it back!",
+          "Strong run, familia! Bit's warmed up and ready for more.",
+          "Good hustle! Every block teaches your feet something new.",
+          "First run in the books! Bit says: otra vez — it only gets better from here."
+        ],
+        tycoonBitLine: "¡Órale, let me show you! Don Mike needs a hand at La Tiendita today — you in?",
+        tSub: "One full shop day, 9 AM–3 PM. Customers at the counter, DMs, ringing phones and emptying shelves — all at once. Deploy Bit's AI tools early, or try to do everything by hand.",
+        tToolsLabel: "Meet your AI team · Tu equipo de IA",
+        tToolAutoDesc: "20s setup, once — then every DM answers itself.",
+        tToolBookDesc: "20s setup, once — answers the phone and books citas for you.",
+        tToolTransDesc: "15s setup, once — counter customers served instantly, EN or ES.",
+        tToolStockDesc: "15s setup, once — flags a shelf 30s before it empties, so restock is a quick 2s tap instead of a lost sale.",
+        howTycoon: "<b>How it plays:</b> tap a task to handle it yourself — about <b>3 seconds</b> each, and you can only do <b>one thing at a time</b>. Deploying a tool keeps your hands busy for its whole setup. If a task's patience bar runs out, that customer walks — <b>5 walk-outs</b> and Don Mike closes early. No Translator? Spanish-speaking customers take a slow <b>phrase-card</b> serve. AI helps — humans still can.",
+        tBestDay: "Best day",
+        tStart: "OPEN THE SHOP",
+        tClockLbl: "Shop clock",
+        tServedHud: "Served",
+        tWalkedHud: "Walked away",
+        tSavedHud: "AI saved",
+        tToolsBar: "AI tools — tap one to deploy it",
+        tQueue: "Task queue",
+        tQueueEmpty: "All quiet… for now.",
+        tToolAuto: "Auto-reply",
+        tToolBook: "Booking assistant",
+        tToolTrans: "Translator",
+        tToolStock: "Stock alert",
+        tToolTap: "Tap to deploy · {s}s setup",
+        tToolSetting: "Setting up… {s}s",
+        tToolOn: "ON — working for you",
+        tTaskCounter: "Customer at the counter",
+        tTaskDM: "New DM",
+        tTaskPhone: "Phone ringing",
+        tTaskStockEmpty: "Shelf EMPTY",
+        tTaskStockLow: "Shelf running low",
+        tPhoneSub: "Wants to book a cita by phone",
+        tStockSub: "Shelf: {item}",
+        tStatusManual: "You're on it… {s}s",
+        tStatusAutoDM: "Auto-reply is answering…",
+        tStatusAutoPhone: "Booking assistant is on the call…",
+        tStatusAutoCounter: "Translator is serving…",
+        tStatusWarn: "Flagged early — quick 2s restock tap",
+        tPhraseTag: "Phrase card — slow serve (no Translator)",
+        tChipEsSlow: "ES · phrase card",
+        tPhoneCleared: "Cita booked",
+        tReportTitle: "Day complete!",
+        tReportEarly: "Closed early",
+        tHoursLbl: "Hours saved by your AI team",
+        tHoursSub: "Tasks your tools cleared on their own: {n}",
+        tServed: "Customers served",
+        tBooked: "Citas booked",
+        tAnswered: "Messages answered",
+        tRestocked: "Shelves restocked",
+        tAutoTasks: "Cleared by AI",
+        tWalked: "Walked away",
+        tNewBestDay: "★ Best day yet!",
+        tEarlyNote: "Don Mike closed at {time} — five customers walked away.",
+        tAgain: "Play another day",
+        tHookLine: "¿Quieres esto en tu negocio de verdad? / Want this in your real business?",
+        tHookBtn: "Book a free discovery call",
+        tHookShop: "See the gadgets from today's shop",
+        tReact3: "¡Increíble! The shop ran like a dream — Don Mike is putting your name on the door. This is what AI on the team feels like.",
+        tReact2: "Solid day, familia! A couple of folks waited too long — deploy one more tool early tomorrow and it's a perfect day.",
+        tReact1: "Rough day at the counter — the queue won this round. Tomorrow, deploy the tools FIRST and watch the whole day change."
+      },
+      es: {
+        brand: "AiMediaCentral presenta",
+        welcome: "¡Órale, let me show you!",
+        welcomeSub: "Elige una cabina y a jugar. Everything bilingual — EN / ES.",
+        cabinets: "Cabinas de juego · Game cabinets",
+        quizBlurb: "Trivia bilingüe de IA para todo el barrio — de niños a abuelos.",
+        runnerBlurb: "Bit corre por el barrio, recuperando tiempo cuadra a cuadra.",
+        tycoonBlurb: "Maneja la tienda de Don Mike por un día — con la IA en tu equipo.",
+        play: "JUGAR",
+        soon: "Próximamente<br />Coming soon",
+        soon2: "Próximamente<br />Coming soon",
+        freeNote: "<b>Gratis para jugar.</b> Sin registros — solo toca y aprende algo nuevo.",
+        quizSub: "Diez preguntas, un Bit, cero presión. Cada respuesta te enseña algo real sobre la IA — en español or in English.",
+        dailyTitle: "Reto del día · Daily Challenge",
+        dailySub: "Un set mixto para todos — las mismas preguntas todo el día.",
+        best: "Récord",
+        pickTier: "Elige tu nivel · Pick your level",
+        how: "<b>Cómo se juega:</b> 10 preguntas · 20 segundos cada una · <b>100 pts</b> por respuesta correcta, más un <b>bono de racha</b> cuando juntas 3 o más seguidas. Bit explica cada respuesta — aciertes o no, sales más listo.",
+        streak: "Racha",
+        score: "Puntos",
+        resultsTitle: "¡Ronda completa!",
+        scoreLbl: "Puntos",
+        correctLbl: "Correctas",
+        streakLbl: "Mejor racha",
+        newBest: "¡Nuevo récord!",
+        share: "Compartir mi puntaje",
+        again: "Jugar otra vez",
+        toLobby: "Volver al lobby",
+        tabHome: "Inicio",
+        tabShop: "Tienda",
+        tabCall: "Reservar llamada",
+        correctWord: "¡Correcto!",
+        wrongWord: "Casi",
+        timeoutWord: "¡Se acabó el tiempo!",
+        qOf: "P {n} / 10",
+        dailyName: "Reto del día",
+        copied: "¡Copiado! Pégalo donde quieras — WhatsApp, TikTok, Stories.",
+        copyFail: "Copia esto: ",
+        bitThink: "Piensa rápido, familia…",
+        bitGood: ["¡Eso! ¡En llamas!", "¡Órale! ¡Esa es!", "Mírate — ¡qué listo!", "¡Así se hace!"],
+        bitBad: ["Buen intento — ¡ya lo sabes para la próxima!", "¡Échale ganas! Bit cree en ti.", "Así aprendemos, familia."],
+        reactions: [
+          "¡Órale! Ronda PERFECTA. Todo el barrio se enteró — oficialmente eres un natural de la IA.",
+          "¡Órale! ¡Encendiste el tablero! A una o dos de ser legendario — juégala otra vez.",
+          "¡Buena ronda, familia! Cada vez juegas más listo — así es como funciona esto.",
+          "¡Buena práctica! Cada respuesta — buena o mala — te enseñó algo real. Bit está orgulloso.",
+          "Los primeros pasos son los que más cuentan. Acabas de aprender más de IA que la mayoría en toda la semana. ¡Otra vez!"
+        ],
+        runnerBitLine: "¿Listo? ¿Pulgar caliente? A recuperar tiempo — ¡vámonos!",
+        runnerSub: "Bit corre por el barrio de neón, cuadra tras cuadra. Agarra monedas y poderes de IA, esquiva el papeleo — cada carrera te devuelve un poco de tiempo.",
+        puAutoDesc: "Resuelve el próximo obstáculo por ti — sin manos.",
+        puShieldDesc: "Reserva tu cita y te protege de un golpe.",
+        puMagnetDesc: "Las monedas cercanas vuelan a Bit por 6 segundos.",
+        howRunner: "<b>Controles:</b> toca en cualquier parte de la calle (o presiona Espacio / ↑) para saltar — toca otra vez en el aire para un <b>doble salto</b>. Las monedas valen <b>+10 pts</b>. Puntaje = distancia + bono de monedas. Cada 500 m, Bit Ejercicio lanza una pausa para estirar — ¡a moverse!",
+        rStart: "¡A CORRER!",
+        rDistLbl: "Distancia",
+        rCoinsLbl: "Monedas",
+        rSpeedLbl: "Velocidad",
+        rOverTitle: "¡Carrera completa!",
+        rAgain: "Correr otra vez",
+        rTapHint: "TOCA PARA SALTAR · TOCA OTRA VEZ = DOBLE SALTO",
+        rStretchSub: "+500 m — ¡pausa para estirar!",
+        rControlsNote: "Toca la calle para saltar — Espacio / ↑ también funciona.",
+        puAutoFx: "¡el próximo obstáculo se resuelve solo!",
+        puShieldFx: "¡escudo activo — un golpe va por la casa!",
+        puMagnetFx: "¡las monedas vuelan a Bit por 6 segundos!",
+        autoUsed: "¡La respuesta automática lo resolvió!",
+        shieldUsed: "¡Escudo de cita — salvado!",
+        runnerReactions: [
+          "¡Órale! ¡VOLASTE por el barrio — Bit casi no te alcanza!",
+          "¡Qué corrida! Toda la cuadra aplaudiendo — ¡otra vez!",
+          "¡Buena carrera, familia! Bit ya calentó y quiere más.",
+          "¡Buen esfuerzo! Cada cuadra le enseña algo nuevo a tus pies.",
+          "¡Primera carrera registrada! Bit dice: otra vez — de aquí solo mejora."
+        ],
+        tycoonBitLine: "¡Órale, let me show you! Don Mike necesita ayuda hoy en La Tiendita — ¿te apuntas?",
+        tSub: "Un día completo de tienda, 9 AM–3 PM. Clientes en el mostrador, mensajes, teléfonos sonando y estantes vaciándose — todo a la vez. Activa temprano las herramientas de IA de Bit, o intenta hacerlo todo a mano.",
+        tToolsLabel: "Conoce a tu equipo de IA · Meet your AI team",
+        tToolAutoDesc: "Instalación de 20s, una vez — después cada mensaje se responde solo.",
+        tToolBookDesc: "Instalación de 20s, una vez — contesta el teléfono y agenda citas por ti.",
+        tToolTransDesc: "Instalación de 15s, una vez — clientes del mostrador atendidos al instante, EN o ES.",
+        tToolStockDesc: "Instalación de 15s, una vez — avisa 30s antes de que un estante se vacíe, y reponer se vuelve un toque rápido de 2s en vez de una venta perdida.",
+        howTycoon: "<b>Cómo se juega:</b> toca una tarea para atenderla tú — unos <b>3 segundos</b> cada una, y solo puedes hacer <b>una cosa a la vez</b>. Activar una herramienta te ocupa las manos durante toda su instalación. Si la paciencia de una tarea se acaba, ese cliente se va — <b>5 clientes que se van</b> y Don Mike cierra temprano. ¿Sin Traductor? Los clientes que hablan español se atienden lento, con <b>tarjeta de frases</b>. La IA ayuda — el humano también puede.",
+        tBestDay: "Mejor día",
+        tStart: "ABRIR LA TIENDA",
+        tClockLbl: "Reloj de la tienda",
+        tServedHud: "Atendidos",
+        tWalkedHud: "Se fueron",
+        tSavedHud: "IA ahorró",
+        tToolsBar: "Herramientas IA — toca una para activarla",
+        tQueue: "Tareas en espera",
+        tQueueEmpty: "Todo tranquilo… por ahora.",
+        tToolAuto: "Respuesta automática",
+        tToolBook: "Asistente de citas",
+        tToolTrans: "Traductor",
+        tToolStock: "Alerta de inventario",
+        tToolTap: "Toca para activar · {s}s",
+        tToolSetting: "Instalando… {s}s",
+        tToolOn: "ACTIVA — trabajando por ti",
+        tTaskCounter: "Cliente en el mostrador",
+        tTaskDM: "Mensaje nuevo",
+        tTaskPhone: "Teléfono sonando",
+        tTaskStockEmpty: "Estante VACÍO",
+        tTaskStockLow: "Estante por acabarse",
+        tPhoneSub: "Quiere agendar una cita por teléfono",
+        tStockSub: "Estante: {item}",
+        tStatusManual: "Tú lo atiendes… {s}s",
+        tStatusAutoDM: "La respuesta automática contesta…",
+        tStatusAutoPhone: "El asistente está en la llamada…",
+        tStatusAutoCounter: "El Traductor está atendiendo…",
+        tStatusWarn: "Avisado temprano — reposición rápida de 2s",
+        tPhraseTag: "Tarjeta de frases — atención lenta (sin Traductor)",
+        tChipEsSlow: "ES · tarjeta de frases",
+        tPhoneCleared: "Cita agendada",
+        tReportTitle: "¡Día completo!",
+        tReportEarly: "Cierre temprano",
+        tHoursLbl: "Horas ahorradas por tu equipo de IA",
+        tHoursSub: "Tareas que tus herramientas resolvieron solas: {n}",
+        tServed: "Clientes atendidos",
+        tBooked: "Citas agendadas",
+        tAnswered: "Mensajes respondidos",
+        tRestocked: "Estantes repuestos",
+        tAutoTasks: "Resueltas por IA",
+        tWalked: "Se fueron",
+        tNewBestDay: "★ ¡Tu mejor día!",
+        tEarlyNote: "Don Mike cerró a las {time} — cinco clientes se fueron.",
+        tAgain: "Jugar otro día",
+        tHookLine: "¿Quieres esto en tu negocio de verdad? / Want this in your real business?",
+        tHookBtn: "Reserva tu llamada de descubrimiento gratis",
+        tHookShop: "Mira los gadgets de la tienda de hoy",
+        tReact3: "¡Increíble! La tienda funcionó como un sueño — Don Mike va a poner tu nombre en la puerta. Así se siente tener IA en el equipo.",
+        tReact2: "¡Buen día, familia! Un par de personas esperaron demasiado — activa una herramienta más temprano mañana y será un día perfecto.",
+        tReact1: "Día difícil en el mostrador — esta vez ganó la fila. Mañana activa las herramientas PRIMERO y mira cómo cambia todo el día."
+      }
+    };
+
+    var TIERS = [
+      { id: "kids",   icon: "🎈", en: { name: "Kids",            desc: "Simple, fun, everyday tech — perfect first round." },
+                                  es: { name: "Niños",           desc: "Simple, divertido, tecnología de todos los días." } },
+      { id: "teens",  icon: "🎧", en: { name: "Teens",           desc: "School, creativity, and the apps you already use." },
+                                  es: { name: "Jóvenes",         desc: "Escuela, creatividad y las apps que ya usas." } },
+      { id: "owners", icon: "💼", en: { name: "Business Owners", desc: "Real time-savers: messages, booking, invoices, marketing." },
+                                  es: { name: "Dueños de negocio", desc: "Ahorros reales de tiempo: mensajes, citas, facturas, marketing." } },
+      { id: "abuelos",icon: "🌼", en: { name: "Abuelos",         desc: "Friendly and practical — voice helpers, reminders, family photos." },
+                                  es: { name: "Abuelos",         desc: "Amable y práctico — asistentes de voz, recordatorios, fotos de familia." } }
+    ];
+
+    /* ============ QUESTION BANK — 52 questions, fully bilingual ============ */
+    /* c = index of the correct option (same position in EN and ES lists) */
+    var BANK = {
+    kids: [
+      { c:0,
+        en:{ q:"What is AI (artificial intelligence)?", a:["A computer program that learns from lots of examples","A robot that does magic tricks","A brand-new kind of phone","A video game character"], why:"AI is computer software that learns patterns from examples — a lot like how you learn from practice!" },
+        es:{ q:"¿Qué es la IA (inteligencia artificial)?", a:["Un programa de computadora que aprende de muchos ejemplos","Un robot que hace trucos de magia","Un tipo de teléfono nuevo","Un personaje de videojuego"], why:"La IA es un programa que aprende patrones de ejemplos — ¡muy parecido a como tú aprendes practicando!" } },
+      { c:0,
+        en:{ q:"You say, “Hey speaker, play my favorite song!” — and it plays. What understood your voice?", a:["AI that turns speech into words","A tiny person inside the speaker","The song plays itself","Magic batteries"], why:"Speech-recognition AI listens to your words and turns them into commands the speaker can follow." },
+        es:{ q:"Dices: «¡Oye bocina, pon mi canción favorita!» — y la pone. ¿Qué entendió tu voz?", a:["Una IA que convierte tu voz en palabras","Una personita dentro de la bocina","La canción se pone sola","Baterías mágicas"], why:"La IA de reconocimiento de voz escucha tus palabras y las convierte en órdenes que la bocina puede seguir." } },
+      { c:0,
+        en:{ q:"How does a tablet learn to unlock when it sees YOUR face?", a:["It studies lots of photos to learn what faces look like","It memorizes your birthday","It asks a grown-up each time","It guesses until it works"], why:"The tablet's AI was trained on many, many faces, so it can spot the pattern that makes your face yours." },
+        es:{ q:"¿Cómo aprende una tableta a desbloquearse cuando ve TU cara?", a:["Estudia muchas fotos para aprender cómo son las caras","Se memoriza tu cumpleaños","Le pregunta a un adulto cada vez","Adivina hasta que funciona"], why:"La IA de la tableta se entrenó con muchísimas caras, así que reconoce el patrón que hace tu cara única." } },
+      { c:0,
+        en:{ q:"A robot vacuum bumps into a chair today — and goes around it tomorrow. What is it doing?", a:["Learning the room as it cleans","Getting tired of chairs","Playing a game","Hiding from the dog"], why:"Smart vacuums build a map of your home and remember where things are. Every clean makes them smarter." },
+        es:{ q:"Una aspiradora robot choca con una silla hoy — y mañana la rodea. ¿Qué está haciendo?", a:["Aprendiendo el cuarto mientras limpia","Cansándose de las sillas","Jugando un juego","Escondiéndose del perro"], why:"Las aspiradoras inteligentes crean un mapa de tu casa y recuerdan dónde están las cosas. Cada limpieza las hace más listas." } },
+      { c:0,
+        en:{ q:"In the AI world, what is a “prompt”?", a:["The words you type or say to ask AI for help","A type of homework","A button that turns AI off","A secret robot password"], why:"A prompt is just your request — a question, an instruction, an idea. Clear prompts get better answers!" },
+        es:{ q:"En el mundo de la IA, ¿qué es un «prompt»?", a:["Las palabras que escribes o dices para pedirle ayuda a la IA","Un tipo de tarea","Un botón que apaga la IA","Una contraseña secreta de robots"], why:"Un «prompt» es simplemente tu petición: una pregunta, una instrucción, una idea. ¡Las peticiones claras reciben mejores respuestas!" } },
+      { c:0,
+        en:{ q:"You type “a cat astronaut” and an app draws one for you. What did the AI do?", a:["Turned your words into a picture","Copied a photo from the internet","Called an artist","Drew it with a pencil"], why:"Text-to-image AI learned from millions of pictures how words and images connect — so it can paint brand-new ones from your ideas." },
+        es:{ q:"Escribes «un gato astronauta» y una app lo dibuja por ti. ¿Qué hizo la IA?", a:["Convirtió tus palabras en una imagen","Copió una foto de internet","Llamó a un artista","Lo dibujó con un lápiz"], why:"La IA de texto a imagen aprendió de millones de imágenes cómo se conectan las palabras y los dibujos — y puede crear imágenes nuevas desde tus ideas." } },
+      { c:0,
+        en:{ q:"Which of these is a GREAT job for AI?", a:["Helping you practice spelling words","Eating your vegetables for you","Tying your shoes","Doing your chores while you nap"], why:"AI is a practice buddy — it can quiz you, read with you, and help you learn faster. The veggies, sadly, are still on you." },
+        es:{ q:"¿Cuál de estos es un trabajo PERFECTO para la IA?", a:["Ayudarte a practicar palabras de ortografía","Comerse tus verduras por ti","Amarrarte los zapatos","Hacer tus quehaceres mientras duermes"], why:"La IA es una compañera de práctica: puede hacerte preguntas, leer contigo y ayudarte a aprender más rápido. Las verduras, lamentablemente, te tocan a ti." } },
+      { c:0,
+        en:{ q:"Your new friend speaks a different language. What can help you two talk?", a:["A translation app that turns your words into their language","Talking much louder","Using only hand signals forever","Waiting until you both grow up"], why:"Translator apps and earbuds use AI to switch languages in seconds — so a new friend is just one “¡hola!” away." },
+        es:{ q:"Tu nuevo amigo habla otro idioma. ¿Qué puede ayudarlos a hablar?", a:["Una app de traducción que convierte tus palabras a su idioma","Hablar mucho más fuerte","Usar solo señas para siempre","Esperar a que los dos crezcan"], why:"Las apps y audífonos traductores usan IA para cambiar de idioma en segundos — un nuevo amigo está a un «hello!» de distancia." } },
+      { c:0,
+        en:{ q:"Why do we say AI is a HELPER, not the boss?", a:["People create it and choose how to use it","AI is too shy to be a boss","Robots don't like meetings","AI only works on weekends"], why:"Humans design AI, turn it on, and decide what it's for. People stay in charge — AI just lends a hand." },
+        es:{ q:"¿Por qué decimos que la IA es una AYUDANTE y no la jefa?", a:["Las personas la crean y deciden cómo usarla","La IA es muy tímida para ser jefa","A los robots no les gustan las juntas","La IA solo trabaja los fines de semana"], why:"Los humanos diseñan la IA, la encienden y deciden para qué sirve. Las personas mandan — la IA solo echa una mano." } },
+      { c:0,
+        en:{ q:"Your photo app finds EVERY picture of your dog in one tap. How?", a:["It learned what dogs look like from many photos","The dog labels them itself","A person sorts them at night","It only keeps dog photos"], why:"Image-recognition AI learned the pattern of “dog” from tons of examples — ears, snout, tail and all." },
+        es:{ q:"Tu app de fotos encuentra TODAS las fotos de tu perro con un toque. ¿Cómo?", a:["Aprendió cómo se ven los perros de muchas fotos","El perro las etiqueta solito","Una persona las ordena de noche","Solo guarda fotos de perros"], why:"La IA de reconocimiento de imágenes aprendió el patrón de «perro» de muchos ejemplos: orejas, hocico, cola y todo." } },
+      { c:0,
+        en:{ q:"An app you've never seen asks for your home address. What's the smart move?", a:["Stop and ask a grown-up first","Type it in super fast","Make up a friend's address instead","Share it — apps are always safe"], why:"Smart and strong: personal info stays private. A grown-up you trust can help you decide what's safe to share." },
+        es:{ q:"Una app que no conoces te pide la dirección de tu casa. ¿Qué es lo más inteligente?", a:["Parar y preguntarle primero a un adulto","Escribirla súper rápido","Inventar la dirección de un amigo","Compartirla — las apps siempre son seguras"], why:"Inteligente y fuerte: tu información personal se queda privada. Un adulto de confianza te ayuda a decidir qué es seguro compartir." } },
+      { c:0,
+        en:{ q:"Grandma says, “Remind me to walk at 5.” Her speaker answers, “Okay!” What is she talking to?", a:["A voice assistant powered by AI","The radio station","A very polite clock","Her neighbor through the wall"], why:"Voice assistants like Alexa, Siri, and Google Assistant use AI to understand speech and set reminders, play music, and more." },
+        es:{ q:"La abuela dice: «Recuérdame caminar a las 5». Su bocina responde: «¡Claro!». ¿Con qué está hablando?", a:["Un asistente de voz con IA","La estación de radio","Un reloj muy educado","Su vecina a través de la pared"], why:"Asistentes como Alexa, Siri y Google Assistant usan IA para entender tu voz y poner recordatorios, música y más." } },
+      { c:0,
+        en:{ q:"True or false: AI NEVER makes mistakes.", a:["False — AI can get things wrong, so people double-check its work","True — AI is perfect","True — computers can't be wrong","False — AI only works on Tuesdays"], why:"AI is smart, but it can mix things up — just like us! That's why people stay in the loop and check important answers." },
+        es:{ q:"Verdadero o falso: la IA NUNCA se equivoca.", a:["Falso — la IA puede equivocarse, por eso las personas verifican su trabajo","Verdadero — la IA es perfecta","Verdadero — las computadoras nunca fallan","Falso — la IA solo trabaja los martes"], why:"La IA es inteligente, pero puede confundirse — ¡igual que nosotros! Por eso las personas verifican las respuestas importantes." } }
+    ],
+    teens: [
+      { c:0,
+        en:{ q:"Which prompt gets the BEST help from an AI study buddy?", a:["“Explain photosynthesis with a simple example, then quiz me”","“Homework”","“Do everything for me”","“Stuff about plants, I guess”"], why:"Specific prompts win: say what you need, how you want it, and what happens next. Vague in, vague out." },
+        es:{ q:"¿Qué prompt consigue la MEJOR ayuda de un compañero de estudio con IA?", a:["«Explícame la fotosíntesis con un ejemplo simple y luego hazme preguntas»","«Tarea»","«Haz todo por mí»","«Algo de plantas, creo»"], why:"Los prompts específicos ganan: di qué necesitas, cómo lo quieres y qué sigue. Vago entra, vago sale." } },
+      { c:0,
+        en:{ q:"What's the smartest way to use AI for homework?", a:["Ask it to explain the steps so YOU learn how to solve it","Copy its answers without reading them","Let it write the whole essay in your name","Use it only the night before — for everything"], why:"AI as a tutor makes you stronger; AI as a shortcut makes the test harder. Learn the steps, keep the skills." },
+        es:{ q:"¿Cuál es la forma más inteligente de usar la IA en la tarea?", a:["Pedirle que explique los pasos para que TÚ aprendas a resolverlo","Copiar sus respuestas sin leerlas","Dejar que escriba todo el ensayo a tu nombre","Usarla solo la noche anterior — para todo"], why:"La IA como tutora te hace más fuerte; como atajo, hace el examen más difícil. Aprende los pasos y quédate con la habilidad." } },
+      { c:0,
+        en:{ q:"Your music app keeps suggesting songs you end up loving. How?", a:["It learned patterns from what you play, skip, and replay","It reads your diary","Every user gets the same list","It picks songs completely at random"], why:"Recommendation AI studies your listening patterns and finds songs with similar vibes, loved by people with taste like yours." },
+        es:{ q:"Tu app de música sigue sugiriendo canciones que te acaban encantando. ¿Cómo?", a:["Aprendió patrones de lo que escuchas, saltas y repites","Lee tu diario","Todos reciben la misma lista","Elige canciones totalmente al azar"], why:"La IA de recomendaciones estudia tus patrones de escucha y encuentra canciones con vibras parecidas que le gustan a gente con gustos como los tuyos." } },
+      { c:0,
+        en:{ q:"Typing a description and getting a brand-new picture back is called…", a:["Text-to-image generation","Downloading","Screenshotting","Photocopying"], why:"Text-to-image models turn words into original art — a wild tool for posters, thumbnails, and story ideas." },
+        es:{ q:"Escribir una descripción y recibir una imagen totalmente nueva se llama…", a:["Generación de texto a imagen","Descargar","Captura de pantalla","Fotocopiar"], why:"Los modelos de texto a imagen convierten palabras en arte original — una herramienta increíble para carteles, miniaturas e ideas de historias." } },
+      { c:0,
+        en:{ q:"You record a voice note and it appears as written text. That tech is…", a:["Speech recognition","Autocorrect","Bluetooth","A ringtone"], why:"Speech recognition turns sound into words — it's behind captions, voice notes, dictation, and voice assistants." },
+        es:{ q:"Grabas una nota de voz y aparece como texto escrito. Esa tecnología es…", a:["Reconocimiento de voz","Autocorrector","Bluetooth","Un tono de llamada"], why:"El reconocimiento de voz convierte sonido en palabras — está detrás de los subtítulos, las notas de voz, el dictado y los asistentes de voz." } },
+      { c:0,
+        en:{ q:"What does it mean to “train” an AI?", a:["Show it lots of examples so it learns patterns","Teach it to lift weights","Charge its battery all night","Give it a really strict bedtime"], why:"Training = examples, examples, examples. Show a model enough photos of cats and it learns “cat” — no rulebook needed." },
+        es:{ q:"¿Qué significa «entrenar» a una IA?", a:["Mostrarle muchos ejemplos para que aprenda patrones","Enseñarla a levantar pesas","Cargar su batería toda la noche","Darle una hora de dormir muy estricta"], why:"Entrenar = ejemplos, ejemplos, ejemplos. Muéstrale suficientes fotos de gatos y aprende qué es «gato» — sin necesidad de un manual." } },
+      { c:0,
+        en:{ q:"Your inbox hides junk mail before you ever see it. Thank…", a:["An AI spam filter","The mail carrier","Your wallpaper","Pure luck"], why:"Spam filters learn what junk looks like — weird links, pushy words — and quietly move it out of your way." },
+        es:{ q:"Tu correo esconde la basura antes de que la veas. Dale las gracias a…", a:["Un filtro de spam con IA","El cartero","Tu fondo de pantalla","Pura suerte"], why:"Los filtros de spam aprenden cómo se ve el correo basura — enlaces raros, palabras insistentes — y lo apartan de tu camino en silencio." } },
+      { c:0,
+        en:{ q:"AI drafts a caption for your post. The smart move before posting is…", a:["Edit it in your own voice first","Post it exactly as-is, always","Add 40 random hashtags","Ask it to post while you sleep"], why:"AI gives you a head start; your voice makes it yours. A quick edit keeps it real — and keeps you in control." },
+        es:{ q:"La IA redacta un texto para tu publicación. Lo inteligente antes de publicar es…", a:["Editarlo con tu propia voz primero","Publicarlo siempre tal cual","Agregar 40 hashtags al azar","Pedirle que publique mientras duermes"], why:"La IA te da ventaja; tu voz lo hace tuyo. Una edición rápida lo mantiene real — y a ti en control." } },
+      { c:0,
+        en:{ q:"A follower comments in Spanish and you want to reply in Spanish. Best play?", a:["Translate your reply with an AI tool, then give it a quick read before sending","Reply in English and hope for the best","Ignore the comment completely","Copy a random sentence from the internet"], why:"Translation AI gets you 95% there in seconds — a quick read keeps it respectful and accurate. ¡El barrio es bilingüe!" },
+        es:{ q:"Un seguidor comenta en español y quieres responder en español. ¿La mejor jugada?", a:["Traduce tu respuesta con una herramienta de IA y léela rápido antes de enviarla","Responder en inglés y cruzar los dedos","Ignorar el comentario por completo","Copiar una frase cualquiera de internet"], why:"La traducción con IA te lleva al 95% en segundos — una lectura rápida lo mantiene respetuoso y correcto. ¡El barrio es bilingüe!" } },
+      { c:0,
+        en:{ q:"What IS a chatbot, really?", a:["A program that chats and answers using AI","A robot with a phone plan","A group chat with 100 people","A brand-new social media app"], why:"A chatbot is software you talk with — it reads your message and builds a helpful reply, any time of day." },
+        es:{ q:"¿Qué ES realmente un chatbot?", a:["Un programa que conversa y responde usando IA","Un robot con plan de teléfono","Un chat grupal de 100 personas","Una red social nueva"], why:"Un chatbot es un programa con el que conversas — lee tu mensaje y construye una respuesta útil, a cualquier hora." } },
+      { c:0,
+        en:{ q:"A wild video is going viral and something about it feels off. Your move?", a:["Check a trusted source before sharing it","Share it fast — views are views","Believe it if it has lots of likes","Assume every video ever made is fake"], why:"A 30-second check protects your people. Real ones verify first — that's how the barrio stays sharp, not scared." },
+        es:{ q:"Un video loco se está haciendo viral y algo se siente raro. ¿Tu jugada?", a:["Verificar en una fuente confiable antes de compartirlo","Compartirlo rápido — vistas son vistas","Creerlo si tiene muchos likes","Asumir que todo video es falso"], why:"Una verificación de 30 segundos protege a tu gente. Los de verdad verifican primero — así el barrio se mantiene listo, no asustado." } },
+      { c:0,
+        en:{ q:"Face unlock, autocorrect, and music recommendations — what do they all share?", a:["They all use AI that learns from data","They all stop working without Wi-Fi","They were all invented last year","They all cost extra money"], why:"Different apps, same engine: AI learning patterns from data to make your phone feel like it knows you." },
+        es:{ q:"Desbloqueo facial, autocorrector y recomendaciones de música — ¿qué comparten todos?", a:["Todos usan IA que aprende de datos","Todos dejan de funcionar sin Wi-Fi","Todos se inventaron el año pasado","Todos cuestan dinero extra"], why:"Apps diferentes, mismo motor: IA que aprende patrones de datos para que tu teléfono sienta que te conoce." } },
+      { c:0,
+        en:{ q:"You've got 20 photos to caption for your page tonight. AI can…", a:["Draft all 20 captions fast, so you just polish and post","Take the photos for you too","Post them without you ever looking","Caption only the blurry ones"], why:"That's the real flex: AI eats the blank-page problem, you keep the taste. Twenty drafts in a minute beats staring at one empty box." },
+        es:{ q:"Tienes 20 fotos para titular en tu página esta noche. La IA puede…", a:["Redactar los 20 textos rápido, para que tú solo pulas y publiques","Tomar las fotos por ti también","Publicarlas sin que las veas nunca","Titular solo las borrosas"], why:"Esa es la verdadera jugada: la IA se come el problema de la página en blanco y tú te quedas con el gusto. Veinte borradores en un minuto ganan a mirar una caja vacía." } }
+    ],
+    owners: [
+      { c:0,
+        en:{ q:"A customer messages your shop at midnight. What can answer politely until morning?", a:["An AI auto-reply that greets them and takes the basics","Nothing — lost customers are just part of life","An out-of-office sign from 1998","Your personal phone number, posted everywhere"], why:"Auto-reply keeps the conversation warm at 2 AM — the customer feels heard, and you pick it up fresh in the morning." },
+        es:{ q:"Un cliente escribe a tu negocio a medianoche. ¿Qué puede responder amablemente hasta la mañana?", a:["Una respuesta automática con IA que saluda y toma los datos básicos","Nada — perder clientes es parte de la vida","Un letrero de «cerrado» de 1998","Tu número personal, publicado en todas partes"], why:"La respuesta automática mantiene la conversación viva a las 2 AM — el cliente se siente atendido y tú lo retomas fresco en la mañana." } },
+      { c:0,
+        en:{ q:"Clients book their own appointments online and get automatic reminders. That setup is…", a:["Online booking with smart reminders","A paper calendar and hope","A full-time receptionist you haven't hired","Double-booking and apologizing"], why:"Booking tools fill your calendar while you work — and reminders mean clients actually show up." },
+        es:{ q:"Los clientes reservan sus propias citas en línea y reciben recordatorios automáticos. Ese sistema es…", a:["Reservas en línea con recordatorios inteligentes","Un calendario de papel y esperanza","Una recepcionista de tiempo completo que no has contratado","Reservar doble y pedir disculpas"], why:"Las herramientas de reservas llenan tu calendario mientras trabajas — y los recordatorios hacen que los clientes sí lleguen." } },
+      { c:0,
+        en:{ q:"Software that sends your invoices and politely reminds clients to pay helps you…", a:["Get paid on time with way less chasing","Become an accountant overnight","Skip sending invoices at all","Charge double by accident"], why:"Automatic invoicing + gentle reminders = steady cash flow, without you playing bill collector." },
+        es:{ q:"Un programa que envía tus facturas y recuerda amablemente el pago te ayuda a…", a:["Cobrar a tiempo con mucho menos correteo","Volverte contador de la noche a la mañana","No enviar facturas nunca","Cobrar el doble por accidente"], why:"Facturación automática + recordatorios amables = flujo de dinero constante, sin que juegues a cobrador." } },
+      { c:0,
+        en:{ q:"A happy customer leaves a glowing review. AI can help you…", a:["Draft a warm thank-you reply in seconds","Buy 100 more reviews","Reply next month, maybe","Hide the review so competitors don't see it"], why:"Fast, genuine replies turn one happy customer into social proof — AI drafts it, you add the heart, done in a minute." },
+        es:{ q:"Un cliente feliz deja una reseña brillante. La IA puede ayudarte a…", a:["Redactar una respuesta de agradecimiento en segundos","Comprar 100 reseñas más","Responder el mes que viene, quizás","Esconder la reseña para que la competencia no la vea"], why:"Las respuestas rápidas y genuinas convierten un cliente feliz en prueba social — la IA redacta, tú pones el corazón, listo en un minuto." } },
+      { c:0,
+        en:{ q:"You need a week of social media posts but have zero time. AI can…", a:["Draft captions and content ideas that you approve and schedule","Post random photos from your camera roll","Run the page with no input from you, forever","Guarantee a million followers by Friday"], why:"AI kills the blank page: drafts, hooks, hashtags. You approve in minutes and the week is handled." },
+        es:{ q:"Necesitas una semana de publicaciones y no tienes tiempo. La IA puede…", a:["Redactar textos e ideas de contenido que tú apruebas y programas","Publicar fotos al azar de tu galería","Manejar la página sin tu opinión, para siempre","Garantizar un millón de seguidores para el viernes"], why:"La IA mata la página en blanco: borradores, ganchos, hashtags. Tú apruebas en minutos y la semana queda resuelta." } },
+      { c:0,
+        en:{ q:"The same 5 questions land in your inbox every single day. The best fix is…", a:["Set up saved answers / an FAQ auto-reply, so you answer once","Retype the same answer forever","Ignore repeat questions","Hire three people just for DMs"], why:"Answer it once, automate it forever. Your saved answers handle the repeats — you handle the humans." },
+        es:{ q:"Las mismas 5 preguntas llegan a tu bandeja todos los días. La mejor solución es…", a:["Configurar respuestas guardadas / un FAQ automático, y responder una sola vez","Reescribir la misma respuesta para siempre","Ignorar las preguntas repetidas","Contratar tres personas solo para mensajes"], why:"Respóndelo una vez, automatízalo para siempre. Tus respuestas guardadas atienden lo repetido — tú atiendes a las personas." } },
+      { c:0,
+        en:{ q:"What cuts appointment no-shows the most?", a:["Automatic reminders before the appointment","Hoping clients remember","Charging a “forgetting fee” with no warning","Writing it on a sticky note"], why:"A friendly text the day before (and the morning of) is the single easiest no-show killer in the business." },
+        es:{ q:"¿Qué reduce más las citas perdidas (no-shows)?", a:["Recordatorios automáticos antes de la cita","Esperar que los clientes recuerden","Cobrar una «multa por olvido» sin aviso","Escribirlo en una nota adhesiva"], why:"Un mensaje amable el día antes (y la mañana de la cita) es la forma más fácil de acabar con los no-shows." } },
+      { c:0,
+        en:{ q:"A customer writes to you in Spanish, and you don't speak it. AI can…", a:["Translate the message instantly so you can reply with confidence","Tell you to learn Spanish first, then reply","Ignore the message politely","Reply with a random phrase and hope"], why:"Instant translation opens a whole community of customers — el barrio buys from businesses that speak to them." },
+        es:{ q:"Un cliente te escribe en inglés y tú no lo hablas. La IA puede…", a:["Traducir el mensaje al instante para que respondas con confianza","Decirte que aprendas inglés primero y luego respondas","Ignorar el mensaje amablemente","Responder con una frase al azar y esperar lo mejor"], why:"La traducción instantánea abre toda una comunidad de clientes — el barrio le compra a los negocios que le hablan en su idioma." } },
+      { c:0,
+        en:{ q:"An AI “stock alert” for your shop tells you…", a:["When a product is running low — before you run out","Today's lottery numbers","When to raise every price","Which customers to ignore"], why:"Low-stock alerts mean the shelf is never embarrassingly empty — you reorder in time, every time." },
+        es:{ q:"Una «alerta de inventario» con IA para tu tienda te avisa…", a:["Cuando un producto se está acabando — antes de que se agote","Los números de la lotería de hoy","Cuándo subir todos los precios","Qué clientes ignorar"], why:"Las alertas de poco inventario significan que el estante nunca queda vacío — reordenas a tiempo, siempre." } },
+      { c:0,
+        en:{ q:"AI saves you 20 minutes a day on messages. Over a full year of days, that's about…", a:["More than 100 hours of your life back","About 20 minutes total","Maybe one free afternoon","Nothing — minutes don't add up"], why:"20 minutes × 365 days ≈ 121 hours. That's three full work-weeks a year — back in your pocket, every year." },
+        es:{ q:"La IA te ahorra 20 minutos al día en mensajes. En un año completo, eso suma como…", a:["Más de 100 horas de tu vida de vuelta","Unos 20 minutos en total","Quizás una tarde libre","Nada — los minutos no se suman"], why:"20 minutos × 365 días ≈ 121 horas. Son como tres semanas completas de trabajo al año — de vuelta en tu bolsillo, cada año." } },
+      { c:0,
+        en:{ q:"What's the smartest FIRST step to bring AI into your business?", a:["Pick one repetitive task you hate and automate that first","Replace every system at once, this weekend","Buy the most expensive tool you can find","Wait five years until AI is “ready”"], why:"One task, one win, one habit. Small automation that sticks beats a giant overhaul that doesn't." },
+        es:{ q:"¿Cuál es el PRIMER paso más inteligente para traer la IA a tu negocio?", a:["Elige una tarea repetitiva que odias y automatiza esa primero","Reemplazar todos los sistemas a la vez, este fin de semana","Comprar la herramienta más cara que encuentres","Esperar cinco años a que la IA esté «lista»"], why:"Una tarea, una victoria, un hábito. La automatización pequeña que se queda gana al cambio gigante que no dura." } },
+      { c:0,
+        en:{ q:"AI drafts a sensitive email to an unhappy client. Who should press send?", a:["You — after a quick read, because your judgment runs the business","The AI, immediately, no review needed","Nobody — delete it and the client","Your competitor, as a prank"], why:"AI drafts at machine speed; you decide at human wisdom. That combo is the whole point — faster, still yours." },
+        es:{ q:"La IA redacta un correo delicado para un cliente molesto. ¿Quién debe presionar «enviar»?", a:["Tú — después de leerlo rápido, porque tu criterio manda en el negocio","La IA, inmediatamente, sin revisión","Nadie — bórralo junto con el cliente","Tu competencia, como broma"], why:"La IA redacta a velocidad de máquina; tú decides con sabiduría humana. Esa combinación es el punto — más rápido, pero sigue siendo tuyo." } },
+      { c:0,
+        en:{ q:"You're with a client and your shop phone rings out. AI can…", a:["Text the caller back automatically, so you don't lose them","Let it ring — if it's important they'll drive over","Answer and put them on hold for an hour","Hide the phone in a drawer"], why:"A missed-call text-back saves the sale while your hands are busy. The caller feels answered, you stay present." },
+        es:{ q:"Estás con un cliente y el teléfono de tu negocio no para de sonar. La IA puede…", a:["Enviar un mensaje automático a quien llamó, para no perderlo","Dejarlo sonar — si es importante, vendrá en persona","Contestar y dejarlo en espera una hora","Esconder el teléfono en un cajón"], why:"Un mensaje automático por llamada perdida salva la venta mientras tienes las manos ocupadas. Quien llamó se siente atendido y tú sigues presente." } }
+    ],
+    abuelos: [
+      { c:0,
+        en:{ q:"You ask a small speaker to play music or read the weather — out loud. That helper is called…", a:["A voice assistant (like Alexa, Siri, or Google)","A television","A doorbell","A calculator"], why:"Voice assistants listen to your words and answer back — music, weather, news, jokes — no typing needed." },
+        es:{ q:"Le pides a una bocina pequeña que ponga música o te lea el clima — en voz alta. Esa ayuda se llama…", a:["Un asistente de voz (como Alexa, Siri o Google)","Un televisor","Un timbre","Una calculadora"], why:"Los asistentes de voz escuchan tus palabras y te responden — música, clima, noticias, chistes — sin tener que escribir." } },
+      { c:0,
+        en:{ q:"What can remind you, kindly, to take your medicine at 9 every morning?", a:["A phone reminder or your smart speaker","Only your memory, nothing else","A note on the fridge you might not see","The neighbor's rooster"], why:"Set it once and it never forgets. Many grandparents let the speaker say it out loud — “¡Hora de su medicina!”" },
+        es:{ q:"¿Qué puede recordarte, con cariño, tomar tu medicina a las 9 cada mañana?", a:["Un recordatorio del teléfono o tu bocina inteligente","Solo tu memoria, nada más","Una nota en la nevera que quizás no veas","El gallo del vecino"], why:"Lo configuras una vez y nunca se olvida. Muchos abuelos dejan que la bocina lo diga en voz alta: «¡Hora de su medicina!»." } },
+      { c:0,
+        en:{ q:"To SEE your grandchildren on the screen while you talk with them, you use…", a:["A video call","A postcard","The radio","A photograph album"], why:"Video calls put the family right in your kitchen — faces, smiles, and all — from anywhere in the world." },
+        es:{ q:"Para VER a tus nietos en la pantalla mientras hablas con ellos, usas…", a:["Una videollamada","Una tarjeta postal","La radio","Un álbum de fotografías"], why:"Las videollamadas ponen a la familia justo en tu cocina — caras, sonrisas y todo — desde cualquier parte del mundo." } },
+      { c:0,
+        en:{ q:"Your phone groups all the photos of your granddaughter together by itself. That quiet helper is…", a:["AI inside your photo app","A tiny librarian in the phone","The photo fairy","Pure coincidence"], why:"Photo apps use AI to recognize faces and places — so “fotos de mi nieta” is always one search away." },
+        es:{ q:"Tu teléfono agrupa todas las fotos de tu nieta solito. Esa ayuda silenciosa es…", a:["La IA dentro de tu app de fotos","Una bibliotecaria miniatura en el teléfono","El hada de las fotos","Pura coincidencia"], why:"Las apps de fotos usan IA para reconocer caras y lugares — así «fotos de mi nieta» siempre está a una búsqueda de distancia." } },
+      { c:0,
+        en:{ q:"If typing on a small phone is hard, what can you do instead on most phones?", a:["Speak — and let the phone write your words for you","Buy a typewriter","Ask the phone to type itself bigger","Only send blank messages"], why:"Tap the little microphone and talk. Speech-to-text writes it down — perfect for messages to the family group chat." },
+        es:{ q:"Si escribir en un teléfono pequeño es difícil, ¿qué puedes hacer en la mayoría de los teléfonos?", a:["Hablar — y dejar que el teléfono escriba tus palabras por ti","Comprar una máquina de escribir","Pedirle al teléfono que se escriba solo más grande","Enviar solo mensajes en blanco"], why:"Toca el micrófonito y habla. La voz a texto lo escribe por ti — perfecto para los mensajes al grupo familiar." } },
+      { c:0,
+        en:{ q:"Your phone can read a text message OUT LOUD to you. That feature is called…", a:["Read aloud / text-to-speech","A phone call","A ringtone","Night mode"], why:"Text-to-speech turns writing into a voice — wonderful for tired eyes, long letters, and news articles." },
+        es:{ q:"Tu teléfono puede leerte un mensaje EN VOZ ALTA. Esa función se llama…", a:["Lectura en voz alta / texto a voz","Una llamada","Un tono","Modo nocturno"], why:"El texto a voz convierte la escritura en voz — maravilloso para ojos cansados, cartas largas y noticias." } },
+      { c:0,
+        en:{ q:"A message says you WON a prize — but asks for your bank details to claim it. The strong, smart move is…", a:["Don't reply — check with family, or call the company at its real number","Send the details quickly before the prize expires","Reply and ask if it's a big prize","Forward it to all your friends"], why:"Real prizes never need your bank password. Pausing and checking with someone you trust keeps YOU in control — that's real power." },
+        es:{ q:"Un mensaje dice que GANASTE un premio — pero pide los datos de tu banco para cobrarlo. Lo fuerte e inteligente es…", a:["No responder — consultar con la familia, o llamar a la empresa a su número verdadero","Enviar los datos rápido antes de que expire el premio","Responder y preguntar si el premio es grande","Reenviarlo a todos tus amigos"], why:"Los premios de verdad nunca necesitan tu contraseña del banco. Pausar y consultar con alguien de confianza te mantiene a TI en control — eso es poder de verdad." } },
+      { c:0,
+        en:{ q:"An important letter arrives in English and you'd love it in Spanish. AI can…", a:["Translate it in seconds — even from a photo of the letter","Only translate one word per day","Change the letter's meaning completely","Mail it back to the sender"], why:"Point your camera at the letter and watch it turn into Spanish. Bring it to appointments, the pharmacy, anywhere." },
+        es:{ q:"Llega una carta importante en inglés y la quisieras en español. La IA puede…", a:["Traducirla en segundos — hasta desde una foto de la carta","Traducir solo una palabra por día","Cambiar el significado completo de la carta","Devolverla por correo al remitente"], why:"Apunta tu cámara a la carta y mírala convertirse en español. Llévala a tus citas, a la farmacia, a donde sea." } },
+      { c:0,
+        en:{ q:"You press the microphone button on your TV remote and SAY the show's name. What finds it for you?", a:["Voice search powered by AI","The antenna","Channel 3, like always","A very fast TV guide"], why:"Voice search hears the title and hunts through every app at once — no more endless scrolling with tiny letters." },
+        es:{ q:"Presionas el micrófono del control de tu TV y DICES el nombre del programa. ¿Qué lo encuentra por ti?", a:["La búsqueda por voz con IA","La antena","El canal 3, como siempre","Una guía de TV muy rápida"], why:"La búsqueda por voz escucha el título y lo busca en todas las apps a la vez — no más navegar sin fin con letricas." } },
+      { c:0,
+        en:{ q:"You ask out loud, “¿Qué tiempo hace hoy?” and a voice answers. That comes from…", a:["A voice assistant that understands Spanish and English","The weather man living in your phone","A lucky guess","The window"], why:"Today's assistants speak both languages of the barrio — ask in Spanish, in English, or mix them. ¡Como en casa!" },
+        es:{ q:"Preguntas en voz alta: «¿Qué tiempo hace hoy?» y una voz te responde. Eso viene de…", a:["Un asistente de voz que entiende español e inglés","El señor del clima viviendo en tu teléfono","Una adivinanza con suerte","La ventana"], why:"Los asistentes de hoy hablan los dos idiomas del barrio — pregunta en español, en inglés o mezclados. ¡Como en casa!" } },
+      { c:0,
+        en:{ q:"AI photo apps can turn your family photos into a little movie with music. Why do people love that?", a:["It brings memories back to life to enjoy and share with family","It deletes the photos forever","It only works for strangers' photos","It makes the photos blurry on purpose"], why:"A one-tap memory movie for birthdays, holidays, and Sunday calls — abuela's archive becomes the family's treasure." },
+        es:{ q:"Las apps de fotos con IA pueden convertir tus fotos familiares en una películita con música. ¿Por qué le encanta a la gente?", a:["Devuelve los recuerdos a la vida para disfrutarlos y compartirlos con la familia","Borra las fotos para siempre","Solo funciona con fotos de extraños","Pone las fotos borrosas a propósito"], why:"Una películita de recuerdos con un toque para cumpleaños, fiestas y llamadas de domingo — el archivo de la abuela se vuelve el tesoro de la familia." } },
+      { c:0,
+        en:{ q:"Be honest: is it okay to ask the voice assistant the SAME question three times?", a:["Yes! It never gets tired, annoyed, or rushed — ask away","No — it remembers and gets offended","Only on Sundays","Yes, but it charges per question"], why:"Bit's favorite fact: assistants have infinite patience. Ask slowly, ask twice, ask in Spanish — that's what they're there for." },
+        es:{ q:"Sea honesto: ¿está bien preguntarle al asistente de voz la MISMA pregunta tres veces?", a:["¡Sí! Nunca se cansa, se molesta ni se apura — pregunta tranquilo","No — se acuerda y se ofende","Solo los domingos","Sí, pero cobra por pregunta"], why:"El dato favorito de Bit: los asistentes tienen paciencia infinita. Pregunta despacio, pregunta dos veces, pregunta en español — para eso están." } },
+      { c:0,
+        en:{ q:"A caller claims to be your bank and asks for your password. Remember: a real bank…", a:["Never asks for your password by phone — hang up and call the number on your card","Always asks twice, just to be sure","Sends prizes by text message","Only calls at midnight"], why:"Knowing this one rule stops almost every phone scam cold. Hang up, call the official number, stay in charge." },
+        es:{ q:"Alguien llama diciendo que es tu banco y te pide tu contraseña. Recuerda: un banco de verdad…", a:["Nunca pide tu contraseña por teléfono — cuelga y llama al número de tu tarjeta","Siempre pregunta dos veces, por si acaso","Envía premios por mensaje de texto","Solo llama a medianoche"], why:"Conocer esta única regla detiene casi todas las estafas telefónicas. Cuelga, llama al número oficial y mantén el control." } }
+    ]
+    };
+
+    /* ============ STATE ============ */
+    var LANG = "en";
+    var QUESTION_TIME = 20;
+    var ROUND_LEN = 10;
+    var game = null; /* {mode, tierId, questions:[{q,order}], idx, score, streak, bestStreak, correct, locked} */
+    var timerId = null;
+    var advanceId = null;
+
+    function $(id){ return document.getElementById(id); }
+    function L(){ return UI[LANG]; }
+
+    function show(viewId){
+      var views = document.querySelectorAll(".view");
+      for (var i = 0; i < views.length; i++) views[i].classList.remove("active");
+      $(viewId).classList.add("active");
+      window.scrollTo(0, 0);
+    }
+
+    /* seeded RNG (mulberry32) — the daily set is identical all day, on every phone */
+    function rngFromSeed(seed){
+      var a = seed >>> 0;
+      return function(){
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        var t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function shuffle(arr, rand){
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--){
+        var j = Math.floor(rand() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      }
+      return a;
+    }
+    function prepare(q, rand){
+      var order = shuffle([0, 1, 2, 3], rand);
+      return { q: q, order: order, correctPos: order.indexOf(q.c) };
+    }
+
+    /* ============ BEST SCORES (localStorage) ============ */
+    function bestKey(id){ return "bba_best_" + id; }
+    function getBest(id){
+      try {
+        var v = window.localStorage.getItem(bestKey(id));
+        return v === null ? null : parseInt(v, 10);
+      } catch (e) { return null; }
+    }
+    function setBest(id, score){
+      try { window.localStorage.setItem(bestKey(id), String(score)); } catch (e) {}
+    }
+
+    /* ============ LANGUAGE ============ */
+    function applyLang(){
+      var dict = L();
+      var nodes = document.querySelectorAll("[data-i18n]");
+      for (var i = 0; i < nodes.length; i++){
+        var key = nodes[i].getAttribute("data-i18n");
+        if (dict[key] !== undefined) nodes[i].innerHTML = dict[key];
+      }
+      var pairs = [["lang-en", "lang-es"], ["lang-en2", "lang-es2"], ["lang-en3", "lang-es3"], ["lang-en4", "lang-es4"], ["lang-en5", "lang-es5"], ["lang-en6", "lang-es6"]];
+      pairs.forEach(function(p){
+        var enBtn = $(p[0]), esBtn = $(p[1]);
+        if (enBtn) enBtn.classList.toggle("on", LANG === "en");
+        if (esBtn) esBtn.classList.toggle("on", LANG === "es");
+      });
+      document.documentElement.lang = LANG;
+      renderTiers();
+      renderDailyBest();
+      renderRunnerBest();
+      if (game && $("view-game").classList.contains("active")) renderQuestion(true);
+      if ($("view-results").classList.contains("active")) renderResultsText();
+      if ($("view-runover").classList.contains("active")) renderRunnerOverText();
+      renderTycoonBest();
+      if (tyk && $("view-tycoon").classList.contains("active")) { renderTools(); renderQueue(); paintTykHud(true); paintTykLine(); }
+      if ($("view-tycoonreport").classList.contains("active")) renderReportText();
+    }
+    function setLang(lang){
+      if (lang !== "en" && lang !== "es") return;
+      LANG = lang;
+      applyLang();
+    }
+
+    /* ============ QUIZ HOME ============ */
+    function renderTiers(){
+      var wrap = $("tier-list");
+      wrap.innerHTML = "";
+      TIERS.forEach(function(t){
+        var best = getBest(t.id);
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tier";
+        btn.setAttribute("data-tier", t.id);
+        btn.innerHTML =
+          '<span class="t-ico" aria-hidden="true">' + t.icon + "</span>" +
+          "<span><h3>" + t[LANG].name + "</h3><p>" + t[LANG].desc + "</p></span>" +
+          '<span class="t-best">' + L().best + "<b>" + (best === null ? "—" : best) + "</b></span>";
+        btn.addEventListener("click", function(){ startTier(t.id); });
+        wrap.appendChild(btn);
+      });
+    }
+    function renderDailyBest(){
+      var best = getBest("daily");
+      $("daily-best").textContent = best === null ? "—" : String(best);
+    }
+
+    /* ============ GAME FLOW ============ */
+    function tierName(id){
+      if (id === "daily") return L().dailyName;
+      for (var i = 0; i < TIERS.length; i++) if (TIERS[i].id === id) return TIERS[i][LANG].name;
+      return id;
+    }
+
+    function startTier(tierId){
+      var rand = Math.random;
+      var picked = shuffle(BANK[tierId], rand).slice(0, ROUND_LEN);
+      beginRound("tier", tierId, picked.map(function(q){ return prepare(q, rand); }));
+    }
+
+    function startDaily(){
+      var now = new Date();
+      var seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+      var rand = rngFromSeed(seed);
+      var pool = [];
+      TIERS.forEach(function(t){ BANK[t.id].forEach(function(q){ pool.push(q); }); });
+      var picked = shuffle(pool, rand).slice(0, ROUND_LEN);
+      beginRound("daily", "daily", picked.map(function(q){ return prepare(q, rand); }));
+    }
+
+    function beginRound(mode, id, questions){
+      stopTimers();
+      game = { mode: mode, tierId: id, questions: questions, idx: 0, score: 0, streak: 0, bestStreak: 0, correct: 0, locked: false, timeLeft: QUESTION_TIME };
+      $("game-title").textContent = mode === "daily" ? L().dailyName : "¡Órale! Quiz";
+      $("q-tier-name").textContent = tierName(id);
+      show("view-game");
+      renderQuestion(false);
+    }
+
+    function stopTimers(){
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      if (advanceId) { clearTimeout(advanceId); advanceId = null; }
+    }
+
+    function renderQuestion(keepState){
+      if (!game) return;
+      var item = game.questions[game.idx];
+      var data = item.q[LANG];
+      $("q-count").textContent = L().qOf.replace("{n}", String(game.idx + 1));
+      $("q-tier-name").textContent = tierName(game.tierId);
+      $("q-text").textContent = data.q;
+      $("score-num").textContent = String(game.score);
+      updateStreak();
+      if (!keepState){
+        $("bit-line").textContent = L().bitThink;
+        $("explain").classList.remove("show");
+      } else if (game.locked){
+        /* language flipped mid-feedback: re-render the verdict + explanation */
+        var right = game.pickedPos === item.correctPos;
+        var gained = right ? 100 + (game.streak >= 3 ? (game.streak - 2) * 25 : 0) : 0;
+        var verdict = $("verdict");
+        verdict.className = "verdict " + (right ? "good" : "bad");
+        verdict.textContent = game.pickedPos === -1 ? L().timeoutWord : (right ? L().correctWord : L().wrongWord);
+        $("explain-text").innerHTML = data.why + (right ? ' <span class="pts">+' + gained + " pts</span>" : "");
+      }
+      var wrap = $("answers");
+      wrap.innerHTML = "";
+      var letters = ["A", "B", "C", "D"];
+      item.order.forEach(function(origIdx, pos){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "ans";
+        b.innerHTML = '<span class="letter">' + letters[pos] + "</span><span>" + data.a[origIdx] + "</span>";
+        if (game.locked){
+          b.disabled = true;
+          if (pos === item.correctPos) b.classList.add("correct");
+          else if (game.pickedPos === pos) b.classList.add("wrong");
+          else b.classList.add("dim");
+        } else {
+          b.addEventListener("click", function(){ answer(pos); });
+        }
+        wrap.appendChild(b);
+      });
+      if (!keepState) startTimer();
+    }
+
+    function updateStreak(){
+      $("streak-num").textContent = String(game ? game.streak : 0);
+      $("streak-box").classList.toggle("hot", !!game && game.streak >= 3);
+    }
+
+    function startTimer(){
+      stopTimers();
+      game.timeLeft = QUESTION_TIME;
+      paintTimer();
+      timerId = setInterval(function(){
+        game.timeLeft = Math.max(0, game.timeLeft - 0.1);
+        paintTimer();
+        if (game.timeLeft <= 0) timeoutAnswer();
+      }, 100);
+    }
+    function paintTimer(){
+      var pct = (game.timeLeft / QUESTION_TIME) * 100;
+      var fill = $("timer-fill");
+      fill.style.width = pct + "%";
+      fill.classList.toggle("low", game.timeLeft <= 5);
+    }
+
+    function answer(pos){
+      if (!game || game.locked) return;
+      game.locked = true;
+      game.pickedPos = pos;
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      var item = game.questions[game.idx];
+      var right = pos === item.correctPos;
+      var gained = 0;
+      if (right){
+        game.streak += 1;
+        game.bestStreak = Math.max(game.bestStreak, game.streak);
+        game.correct += 1;
+        gained = 100 + (game.streak >= 3 ? (game.streak - 2) * 25 : 0);
+        game.score += gained;
+      } else {
+        game.streak = 0;
+      }
+      reveal(item, right, false, gained);
+    }
+
+    function timeoutAnswer(){
+      if (!game || game.locked) return;
+      game.locked = true;
+      game.pickedPos = -1;
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      game.streak = 0;
+      reveal(game.questions[game.idx], false, true, 0);
+    }
+
+    function reveal(item, right, timedOut, gained){
+      var buttons = $("answers").children;
+      for (var i = 0; i < buttons.length; i++){
+        buttons[i].disabled = true;
+        if (i === item.correctPos) buttons[i].classList.add("correct");
+        else if (i === game.pickedPos) buttons[i].classList.add("wrong");
+        else buttons[i].classList.add("dim");
+      }
+      $("score-num").textContent = String(game.score);
+      updateStreak();
+      var data = item.q[LANG];
+      var verdict = $("verdict");
+      verdict.className = "verdict " + (right ? "good" : "bad");
+      verdict.textContent = timedOut ? L().timeoutWord : (right ? L().correctWord : L().wrongWord);
+      $("explain-text").innerHTML = data.why + (right && gained > 100 ? ' <span class="pts">+' + gained + " pts</span>" : (right ? ' <span class="pts">+100 pts</span>' : ""));
+      $("explain").classList.add("show");
+      var lines = right ? L().bitGood : L().bitBad;
+      $("bit-line").textContent = lines[Math.floor(Math.random() * lines.length)];
+      advanceId = setTimeout(nextQuestion, 3400);
+    }
+
+    function nextQuestion(){
+      advanceId = null;
+      if (!game) return;
+      game.idx += 1;
+      game.locked = false;
+      game.pickedPos = undefined;
+      if (game.idx >= game.questions.length) finishRound();
+      else renderQuestion(false);
+    }
+
+    /* ============ RESULTS ============ */
+    function reactionFor(correct){
+      var idx = correct >= 10 ? 0 : correct >= 8 ? 1 : correct >= 6 ? 2 : correct >= 4 ? 3 : 4;
+      return L().reactions[idx];
+    }
+    function finishRound(){
+      stopTimers();
+      var id = game.tierId;
+      var prev = getBest(id);
+      game.isNewBest = prev === null || game.score > prev;
+      if (game.isNewBest) setBest(id, game.score);
+      renderResultsText();
+      show("view-results");
+    }
+    function renderResultsText(){
+      if (!game) return;
+      $("reaction").textContent = reactionFor(game.correct);
+      $("final-score").textContent = String(game.score);
+      $("final-correct").textContent = game.correct + " / " + game.questions.length;
+      $("final-streak").textContent = String(game.bestStreak);
+      $("newbest").classList.toggle("show", !!game.isNewBest);
+      $("share-note").textContent = "";
+      var owners = game.tierId === "owners";
+      $("funnel-card").innerHTML = owners
+        ? (LANG === "es"
+            ? "<b>¿Quieres esto en tu negocio de verdad?</b> AiMediaCentral configura estas mismas herramientas para negocios reales. <a href=\"https://cal.com/aimediacentral/30min\" target=\"_blank\" rel=\"noopener\">Reserva tu llamada de descubrimiento gratis →</a>"
+            : "<b>Want this in your real business?</b> AiMediaCentral sets up these exact tools for real shops. <a href=\"https://cal.com/aimediacentral/30min\" target=\"_blank\" rel=\"noopener\">Book your free discovery call →</a>")
+        : (LANG === "es"
+            ? "¿Te gustó? En la <a href=\"https://aimediacentral.com#shop\" target=\"_blank\" rel=\"noopener\">Tiendita de AiMediaCentral</a> están los gadgets de verdad que Bit usa — audífonos traductores, bocinas inteligentes y más."
+            : "Liked it? The gadgets Bit uses are real — find translator earbuds, smart speakers and more in the <a href=\"https://aimediacentral.com#shop\" target=\"_blank\" rel=\"noopener\">AiMediaCentral shop</a>.");
+    }
+
+    function shareText(){
+      var tname = tierName(game.tierId);
+      return "🤖 ¡Órale! Quiz — Bit's Barrio Arcade\n" +
+        "I scored " + game.score + " pts (" + game.correct + "/10, best streak " + game.bestStreak + ") on the " + tname + " round!\n" +
+        "¡Saqué " + game.score + " puntos (" + game.correct + "/10, mejor racha " + game.bestStreak + ") en la ronda de " + tname + "!\n" +
+        "¿Puedes ganarme? / Can you beat me? Play free — AiMediaCentral";
+    }
+    function copyShare(){
+      var text = shareText();
+      function done(){ $("share-note").textContent = L().copied; }
+      function fallback(){
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); }
+        catch (e) { $("share-note").textContent = L().copyFail + text; }
+        document.body.removeChild(ta);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+    }
+
+    /* ============ WIRING ============ */
+    function goLobby(){ stopTimers(); stopRun(); stopTyk(); game = null; show("view-lobby"); }
+    function goQuizHome(){ stopTimers(); game = null; renderTiers(); renderDailyBest(); show("view-quizhome"); }
+
+    $("cab-quiz").addEventListener("click", goQuizHome);
+    $("btn-back-lobby").addEventListener("click", goLobby);
+    $("btn-lobby2").addEventListener("click", goLobby);
+    $("tab-home").addEventListener("click", function(e){ e.preventDefault(); goLobby(); });
+    $("btn-daily").addEventListener("click", startDaily);
+    $("btn-quit").addEventListener("click", goQuizHome);
+    $("btn-again").addEventListener("click", function(){
+      if (!game) { goQuizHome(); return; }
+      if (game.mode === "daily") startDaily(); else startTier(game.tierId);
+    });
+    $("btn-share").addEventListener("click", copyShare);
+    $("lang-en").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es").addEventListener("click", function(){ setLang("es"); });
+    $("lang-en2").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es2").addEventListener("click", function(){ setLang("es"); });
+
+    /* ============ BIT RUNNER ============ */
+    var run = null;
+    var runRaf = null;
+    var runLastTs = 0;
+    var toastId = null;
+    var bannerId = null;
+    var hudCache = {};
+    var RUN_H = 340;
+    var RUN_GRAV = 2500;
+    var RUN_JUMPV = 860;
+    var RUN_JUMPV2 = 790;
+    var SHOPS = [
+      { name: "LA TIENDITA", color: "#00e5ff" },
+      { name: "PANADERÍA", color: "#ffb62e" },
+      { name: "BARBERÍA", color: "#ff4d7e" },
+      { name: "CAFETERÍA", color: "#3dff9e" },
+      { name: "FLORERÍA", color: "#ff9de2" }
+    ];
+    var SHOP_W = 235;
+    var STARS = [];
+    (function(){
+      for (var i = 0; i < 46; i++) STARS.push({ fx: Math.random(), y: 6 + Math.random() * 108, r: Math.random() < 0.8 ? 1.3 : 2.1, tw: Math.random() * 6.28 });
+    })();
+
+    function renderRunnerBest(){
+      var el = $("runner-best");
+      if (!el) return;
+      var b = getBest("runner");
+      el.textContent = b === null ? "—" : String(b);
+      var bd = getBest("runnerdist");
+      $("runner-best-dist").textContent = bd === null ? "" : "· " + bd + " m";
+    }
+    function goRunnerHome(){ stopRun(); renderRunnerBest(); show("view-runnerhome"); }
+
+    function roundRectPath(g, x, y, w, h, r){
+      g.beginPath();
+      g.moveTo(x + r, y);
+      g.arcTo(x + w, y, x + w, y + h, r);
+      g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r);
+      g.arcTo(x, y, x + w, y, r);
+      g.closePath();
+    }
+
+    function fitRunnerCanvas(){
+      var cv = $("run-canvas");
+      if (!cv || !run) return;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = cv.clientWidth || 320;
+      run.W = w;
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(RUN_H * dpr);
+      run.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function startRun(){
+      stopRun();
+      show("view-runner");
+      var cv = $("run-canvas");
+      run = {
+        ctx: cv.getContext("2d"), W: 320, H: RUN_H, groundY: RUN_H - 46,
+        distPx: 0, speed: 245, coins: 0,
+        feetY: RUN_H - 46, vy: 0, jumps: 0, grounded: true,
+        obstacles: [], coinsArr: [], powers: [], parts: [],
+        nextObs: 540, nextCoin: 300, nextPow: 1400,
+        shield: false, auto: false, magnetT: 0, invulnT: 0,
+        lastStretch: 0, dead: false, deadT: 0,
+        flashA: 0, flashColor: "#ff5470",
+        phase: 0, t: 0, finalScore: undefined, finalDist: 0, isNewBest: false
+      };
+      hudCache = {};
+      fitRunnerCanvas();
+      updateRunnerHud();
+      paintBuffs();
+      $("run-hint").classList.add("show");
+      runLastTs = 0;
+      runRaf = requestAnimationFrame(runLoop);
+    }
+
+    function stopRunLoop(){
+      if (runRaf) { cancelAnimationFrame(runRaf); runRaf = null; }
+    }
+    function stopRun(){
+      stopRunLoop();
+      hideToast();
+      hideBanner();
+    }
+
+    function bitX(){
+      return Math.max(62, Math.min(104, run.W * 0.26));
+    }
+
+    function runnerJump(){
+      if (!run || run.dead) return;
+      $("run-hint").classList.remove("show");
+      if (run.grounded){
+        run.vy = -RUN_JUMPV;
+        run.grounded = false;
+        run.jumps = 1;
+      } else if (run.jumps < 2){
+        run.vy = -RUN_JUMPV2;
+        run.jumps = 2;
+        burst(bitX(), run.feetY - 2, "#00e5ff", 8, 130);
+      }
+    }
+
+    function burst(x, y, color, n, spd){
+      for (var i = 0; i < n; i++){
+        var a = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+        var v = spd * (0.5 + Math.random() * 0.7);
+        run.parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, life: 0, max: 0.45 + Math.random() * 0.25, color: color, r: 2 + Math.random() * 2.2 });
+      }
+    }
+
+    function nextGap(){
+      var gap = 430 + Math.random() * 330 - (run.speed - 245) * 0.35;
+      return Math.max(330, gap);
+    }
+    function spawnObstacle(){
+      var r = Math.random();
+      var type = r < 0.4 ? "papers" : (r < 0.7 ? "phone" : "spam");
+      var dims = { papers: { w: 38, h: 26 }, phone: { w: 27, h: 38 }, spam: { w: 46, h: 28 } }[type];
+      run.obstacles.push({ type: type, x: run.W + 60, w: dims.w, h: dims.h, ph: Math.random() * 6.28 });
+    }
+    function spawnCoins(){
+      var high = Math.random() < 0.5;
+      var y = high ? run.groundY - 104 : run.groundY - 34;
+      var n = 4 + Math.floor(Math.random() * 2);
+      for (var i = 0; i < n; i++) run.coinsArr.push({ x: run.W + 40 + i * 34, y: y, taken: false });
+    }
+    function spawnPower(){
+      var kinds = ["auto", "shield", "magnet"];
+      var kind = kinds[Math.floor(Math.random() * kinds.length)];
+      run.powers.push({ kind: kind, x: run.W + 60, y: run.groundY - 58, taken: false });
+    }
+
+    function showToast(html){
+      var t = $("run-toast");
+      t.innerHTML = html;
+      t.classList.add("show");
+      if (toastId) clearTimeout(toastId);
+      toastId = setTimeout(hideToast, 2100);
+    }
+    function hideToast(){
+      var t = $("run-toast");
+      if (t) t.classList.remove("show");
+      if (toastId) { clearTimeout(toastId); toastId = null; }
+    }
+    function showBanner(){
+      var b = $("run-banner");
+      b.classList.add("show");
+      if (bannerId) clearTimeout(bannerId);
+      bannerId = setTimeout(hideBanner, 2200);
+    }
+    function hideBanner(){
+      var b = $("run-banner");
+      if (b) b.classList.remove("show");
+      if (bannerId) { clearTimeout(bannerId); bannerId = null; }
+    }
+    function puToast(kind){
+      var d = L();
+      if (kind === "auto") return "<b>Auto-reply · Respuesta automática</b> — " + d.puAutoFx;
+      if (kind === "shield") return "<b>Book cita · Reserva tu cita</b> — " + d.puShieldFx;
+      return "<b>Speaker magnet · Bocina imán</b> — " + d.puMagnetFx;
+    }
+    function setText(id, val){
+      if (hudCache[id] !== val){ hudCache[id] = val; var el = $(id); if (el) el.textContent = val; }
+    }
+    function updateRunnerHud(){
+      if (!run) return;
+      setText("r-dist", Math.floor(run.distPx / 12) + " m");
+      setText("r-coins", String(run.coins));
+      setText("r-speed", String(Math.round(run.speed * 0.045)));
+    }
+    function paintBuffs(){
+      if (!run) return;
+      $("buff-auto").classList.toggle("on", !!run.auto);
+      $("buff-shield").classList.toggle("on", !!run.shield);
+      $("buff-magnet").classList.toggle("on", run.magnetT > 0);
+      setText("buff-magnet-t", run.magnetT > 0 ? String(Math.ceil(run.magnetT)) : "");
+    }
+
+    function runLoop(ts){
+      if (!run) { runRaf = null; return; }
+      if (!runLastTs) runLastTs = ts;
+      var dt = Math.min(0.033, (ts - runLastTs) / 1000);
+      runLastTs = ts;
+      stepRun(dt);
+      if (run && !run.over) { drawRun(); runRaf = requestAnimationFrame(runLoop); }
+      else runRaf = null;
+    }
+
+    function stepRun(dt){
+      if (run.over) return;
+      run.t += dt;
+      run.flashA = Math.max(0, run.flashA - dt * 1.8);
+      stepParts(dt);
+      if (run.dead){
+        run.deadT += dt;
+        if (run.deadT >= 0.55) endRun();
+        return;
+      }
+      run.speed = Math.min(540, run.speed + 7 * dt);
+      var dx = run.speed * dt;
+      run.distPx += dx;
+      run.phase += dx * 0.055;
+      if (run.invulnT > 0) run.invulnT -= dt;
+      if (run.magnetT > 0){ run.magnetT -= dt; if (run.magnetT <= 0) run.magnetT = 0; }
+
+      /* physics */
+      if (!run.grounded){
+        run.vy += RUN_GRAV * dt;
+        run.feetY += run.vy * dt;
+        if (run.feetY >= run.groundY){
+          run.feetY = run.groundY;
+          run.vy = 0;
+          run.grounded = true;
+          run.jumps = 0;
+          burst(bitX(), run.groundY, "#7fd8e8", 5, 70);
+        }
+      }
+
+      /* Bit Ejercicio stretch break every 500 m — flavor only */
+      var distM = run.distPx / 12;
+      if (distM - run.lastStretch >= 500){ run.lastStretch += 500; showBanner(); }
+
+      /* spawns */
+      run.nextObs -= dx;
+      if (run.nextObs <= 0){ spawnObstacle(); run.nextObs = nextGap(); }
+      run.nextCoin -= dx;
+      if (run.nextCoin <= 0){ spawnCoins(); run.nextCoin = 300 + Math.random() * 420; }
+      run.nextPow -= dx;
+      if (run.nextPow <= 0){ spawnPower(); run.nextPow = 1500 + Math.random() * 1100; }
+
+      /* move entities */
+      var i;
+      for (i = run.obstacles.length - 1; i >= 0; i--){ run.obstacles[i].x -= dx; if (run.obstacles[i].x < -80) run.obstacles.splice(i, 1); }
+      for (i = run.powers.length - 1; i >= 0; i--){ run.powers[i].x -= dx; if (run.powers[i].x < -60) run.powers.splice(i, 1); }
+      var cx = bitX(), cy = run.feetY - 30;
+      for (i = run.coinsArr.length - 1; i >= 0; i--){
+        var c = run.coinsArr[i];
+        c.x -= dx;
+        if (run.magnetT > 0){
+          var mdx = cx - c.x, mdy = cy - c.y;
+          var md = Math.sqrt(mdx * mdx + mdy * mdy);
+          if (md > 1 && md < 150){ c.x += (mdx / md) * 460 * dt; c.y += (mdy / md) * 460 * dt; }
+        }
+        if (c.x < -30){ run.coinsArr.splice(i, 1); continue; }
+        var ddx = c.x - cx, ddy = c.y - cy;
+        if (ddx * ddx + ddy * ddy < 34 * 34){
+          run.coins += 1;
+          burst(c.x, c.y, "#ffb62e", 6, 90);
+          run.coinsArr.splice(i, 1);
+        }
+      }
+
+      /* power-up pickups */
+      for (i = run.powers.length - 1; i >= 0; i--){
+        var p = run.powers[i];
+        var pdx = p.x - cx, pdy = p.y - cy;
+        if (pdx * pdx + pdy * pdy < 40 * 40){
+          if (p.kind === "auto") run.auto = true;
+          else if (p.kind === "shield") run.shield = true;
+          else run.magnetT = 6;
+          showToast(puToast(p.kind));
+          burst(p.x, p.y, "#ffffff", 8, 110);
+          run.powers.splice(i, 1);
+          paintBuffs();
+        }
+      }
+
+      /* obstacle collisions */
+      if (run.invulnT <= 0){
+        var bx = cx - 18, by = run.feetY - 56, bw = 36, bh = 54;
+        for (i = 0; i < run.obstacles.length; i++){
+          var o = run.obstacles[i];
+          var oy = o.type === "spam" ? run.groundY - 112 : run.groundY - o.h;
+          var ox = o.x + 4, ow = o.w - 8, oh = o.h - 3;
+          if (bx < ox + ow && bx + bw > ox && by < oy + oh && by + bh > oy){
+            if (run.auto){
+              run.auto = false;
+              burst(o.x + o.w / 2, oy + o.h / 2, "#00e5ff", 12, 170);
+              run.obstacles.splice(i, 1);
+              run.flashColor = "#00e5ff"; run.flashA = 0.35;
+              showToast(L().autoUsed);
+              paintBuffs();
+            } else if (run.shield){
+              run.shield = false;
+              run.invulnT = 0.9;
+              burst(o.x + o.w / 2, oy + o.h / 2, "#3dff9e", 12, 170);
+              run.obstacles.splice(i, 1);
+              run.flashColor = "#3dff9e"; run.flashA = 0.35;
+              showToast(L().shieldUsed);
+              paintBuffs();
+            } else {
+              run.dead = true;
+              run.deadT = 0;
+              run.flashColor = "#ff5470"; run.flashA = 0.7;
+              burst(cx, run.feetY - 34, "#ff5470", 14, 190);
+              $("run-hint").classList.remove("show");
+            }
+            break;
+          }
+        }
+      }
+
+      updateRunnerHud();
+      paintBuffs();
+    }
+
+    function stepParts(dt){
+      for (var i = run.parts.length - 1; i >= 0; i--){
+        var p = run.parts[i];
+        p.life += dt;
+        if (p.life >= p.max){ run.parts.splice(i, 1); continue; }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 300 * dt;
+      }
+    }
+
+    function endRun(){
+      run.over = true;
+      var distM = Math.floor(run.distPx / 12);
+      run.finalDist = distM;
+      run.finalScore = distM + run.coins * 10;
+      var prev = getBest("runner");
+      run.isNewBest = prev === null || run.finalScore > prev;
+      if (run.isNewBest) setBest("runner", run.finalScore);
+      var prevD = getBest("runnerdist");
+      if (prevD === null || distM > prevD) setBest("runnerdist", distM);
+      stopRunLoop();
+      hideToast();
+      hideBanner();
+      renderRunnerOverText();
+      renderRunnerBest();
+      show("view-runover");
+    }
+
+    function runnerReactionFor(dist){
+      var idx = dist >= 1200 ? 0 : dist >= 700 ? 1 : dist >= 350 ? 2 : dist >= 150 ? 3 : 4;
+      return L().runnerReactions[idx];
+    }
+    function renderRunnerOverText(){
+      if (!run || run.finalScore === undefined) return;
+      $("r-reaction").textContent = runnerReactionFor(run.finalDist);
+      $("r-final-score").textContent = String(run.finalScore);
+      $("r-final-dist").textContent = run.finalDist + " m";
+      $("r-final-coins").textContent = String(run.coins);
+      $("r-newbest").classList.toggle("show", !!run.isNewBest);
+      $("r-share-note").textContent = "";
+      $("r-funnel-card").innerHTML = LANG === "es"
+        ? "El equipo favorito de Bit para recuperar tiempo vive en la <a href=\"https://aimediacentral.com#shop\" target=\"_blank\" rel=\"noopener\">Tiendita de AiMediaCentral</a> — bocinas inteligentes, audífonos traductores y más."
+        : "Bit's favorite time-saving gear lives in the <a href=\"https://aimediacentral.com#shop\" target=\"_blank\" rel=\"noopener\">AiMediaCentral shop</a> — smart speakers, translator earbuds and more.";
+    }
+
+    function runnerShareText(){
+      return "🏃 Bit Runner — Bit's Barrio Arcade\n" +
+        "I scored " + run.finalScore + " pts (" + run.finalDist + " m, " + run.coins + " coins) in Bit Runner!\n" +
+        "¡Saqué " + run.finalScore + " puntos (" + run.finalDist + " m, " + run.coins + " monedas) en Bit Runner!\n" +
+        "¿Puedes ganarme? / Can you beat me? Play free — AiMediaCentral";
+    }
+    function copyRunnerShare(){
+      if (!run || run.finalScore === undefined) return;
+      var text = runnerShareText();
+      function done(){ $("r-share-note").textContent = L().copied; }
+      function fallback(){
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); }
+        catch (e) { $("r-share-note").textContent = L().copyFail + text; }
+        document.body.removeChild(ta);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+    }
+
+    /* ---------- runner rendering ---------- */
+    function drawRun(){
+      var g = run.ctx, W = run.W, H = run.H, gy = run.groundY;
+      /* sky */
+      var grad = g.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, "#050b1c");
+      grad.addColorStop(0.62, "#081630");
+      grad.addColorStop(1, "#0a1a33");
+      g.fillStyle = grad;
+      g.fillRect(0, 0, W, H);
+      /* stars */
+      var si;
+      for (si = 0; si < STARS.length; si++){
+        var st = STARS[si];
+        g.globalAlpha = 0.3 + 0.3 * (0.5 + 0.5 * Math.sin(run.t * 1.7 + st.tw));
+        g.fillStyle = "#bfefff";
+        g.fillRect(st.fx * W, st.y, st.r, st.r);
+      }
+      g.globalAlpha = 1;
+      /* moon */
+      g.save();
+      g.shadowColor = "rgba(190,240,255,.8)";
+      g.shadowBlur = 22;
+      g.fillStyle = "#dff6ff";
+      g.beginPath(); g.arc(W - 52, 42, 15, 0, 7); g.fill();
+      g.restore();
+      /* distant skyline (parallax) */
+      var off25 = (run.distPx * 0.25) % 92;
+      var baseIdx = Math.floor((run.distPx * 0.25) / 92);
+      g.fillStyle = "#060f22";
+      var bk, bx2;
+      for (bk = -1; bk < W / 92 + 2; bk++){
+        var idx = baseIdx + bk;
+        var bh = 46 + ((idx * 53) % 58 + 58) % 58;
+        bx2 = bk * 92 - off25;
+        g.fillRect(bx2, gy - bh, 84, bh);
+        g.fillRect(bx2 + 38, gy - bh - 8, 5, 8);
+        g.fillStyle = "rgba(255,200,110,.5)";
+        for (var wy = 0; wy < 3; wy++) for (var wx = 0; wx < 4; wx++){
+          if (((idx * 31 + wy * 7 + wx * 13) % 5 + 5) % 5 === 0) g.fillRect(bx2 + 10 + wx * 18, gy - bh + 12 + wy * 22, 4, 5);
+        }
+        g.fillStyle = "#060f22";
+      }
+      /* storefronts */
+      var firstN = Math.floor(run.distPx / SHOP_W);
+      var shopOff = run.distPx - firstN * SHOP_W;
+      var sk;
+      for (sk = -1; sk * SHOP_W - shopOff < W; sk++){
+        var nIdx = firstN + sk;
+        var shop = SHOPS[((nIdx % SHOPS.length) + SHOPS.length) % SHOPS.length];
+        drawShop(g, sk * SHOP_W - shopOff, gy, shop);
+      }
+      /* street lamps */
+      var lampOff = run.distPx % 290;
+      var lx;
+      g.strokeStyle = "#274b6e";
+      for (lx = -lampOff + 150; lx < W + 60; lx += 290){
+        g.lineWidth = 3;
+        g.beginPath(); g.moveTo(lx, gy); g.lineTo(lx, gy - 98); g.lineTo(lx + 14, gy - 98); g.stroke();
+        g.save();
+        g.shadowColor = "rgba(0,229,255,.9)"; g.shadowBlur = 16;
+        g.fillStyle = "#aef4ff";
+        g.beginPath(); g.arc(lx + 16, gy - 96, 4.5, 0, 7); g.fill();
+        g.restore();
+        var cone = g.createLinearGradient(0, gy - 96, 0, gy);
+        cone.addColorStop(0, "rgba(0,229,255,.10)");
+        cone.addColorStop(1, "rgba(0,229,255,0)");
+        g.fillStyle = cone;
+        g.beginPath();
+        g.moveTo(lx + 16, gy - 96); g.lineTo(lx - 8, gy); g.lineTo(lx + 40, gy); g.closePath(); g.fill();
+      }
+      /* street */
+      g.fillStyle = "#04070f";
+      g.fillRect(0, gy, W, H - gy);
+      g.save();
+      g.shadowColor = "rgba(0,229,255,.8)"; g.shadowBlur = 8;
+      g.fillStyle = "#00e5ff";
+      g.fillRect(0, gy, W, 2);
+      g.restore();
+      g.fillStyle = "rgba(0,229,255,.30)";
+      var dashOff = run.distPx % 54;
+      var dx2;
+      for (dx2 = -dashOff; dx2 < W; dx2 += 54) g.fillRect(dx2, gy + 24, 28, 4);
+
+      /* entities */
+      var i;
+      for (i = 0; i < run.coinsArr.length; i++) drawCoin(g, run.coinsArr[i]);
+      for (i = 0; i < run.powers.length; i++) drawPower(g, run.powers[i]);
+      for (i = 0; i < run.obstacles.length; i++) drawObstacle(g, run.obstacles[i]);
+      for (i = 0; i < run.parts.length; i++){
+        var pt = run.parts[i];
+        g.globalAlpha = Math.max(0, 1 - pt.life / pt.max);
+        g.fillStyle = pt.color;
+        g.beginPath(); g.arc(pt.x, pt.y, pt.r, 0, 7); g.fill();
+      }
+      g.globalAlpha = 1;
+
+      drawBit(g, bitX(), run.feetY);
+
+      if (run.flashA > 0){
+        g.globalAlpha = run.flashA * 0.45;
+        g.fillStyle = run.flashColor;
+        g.fillRect(0, 0, W, H);
+        g.globalAlpha = 1;
+      }
+    }
+
+    function drawShop(g, x, gy, shop){
+      var w = SHOP_W;
+      g.fillStyle = "#0a1830";
+      g.fillRect(x, gy - 120, w, 120);
+      g.fillStyle = "rgba(0,229,255,.14)";
+      g.fillRect(x, gy - 120, w, 2);
+      /* sign */
+      g.fillStyle = "#071426";
+      g.fillRect(x + 14, gy - 112, w - 28, 30);
+      g.strokeStyle = shop.color;
+      g.globalAlpha = 0.75;
+      g.lineWidth = 1.4;
+      g.strokeRect(x + 14, gy - 112, w - 28, 30);
+      g.globalAlpha = 1;
+      g.save();
+      g.shadowColor = shop.color;
+      g.shadowBlur = 12;
+      g.fillStyle = shop.color;
+      g.font = "14px Bungee, sans-serif";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(shop.name, x + w / 2, gy - 96);
+      g.restore();
+      /* awning stripes */
+      var seg = (w - 36) / 8, s;
+      for (s = 0; s < 8; s++){
+        g.fillStyle = s % 2 ? "#0d2242" : shop.color;
+        g.globalAlpha = s % 2 ? 1 : 0.5;
+        g.fillRect(x + 18 + s * seg, gy - 78, seg, 11);
+      }
+      g.globalAlpha = 1;
+      /* window + door */
+      g.fillStyle = "rgba(255,217,160,.85)";
+      g.fillRect(x + 24, gy - 58, 84, 44);
+      g.fillStyle = "rgba(120,80,20,.35)";
+      g.fillRect(x + 24, gy - 38, 84, 3);
+      g.fillRect(x + 64, gy - 58, 3, 44);
+      g.fillStyle = "#0d2242";
+      g.fillRect(x + w - 84, gy - 58, 52, 58);
+      g.fillStyle = "rgba(0,229,255,.30)";
+      g.fillRect(x + w - 76, gy - 50, 36, 20);
+      g.fillStyle = "#ffb62e";
+      g.beginPath(); g.arc(x + w - 40, gy - 22, 2.2, 0, 7); g.fill();
+    }
+
+    function drawCoin(g, c){
+      var pulse = 1 + 0.08 * Math.sin(run.t * 5 + c.x * 0.05);
+      g.save();
+      g.shadowColor = "rgba(255,182,46,.9)";
+      g.shadowBlur = 14;
+      g.fillStyle = "#ffb62e";
+      g.beginPath(); g.arc(c.x, c.y, 9 * pulse, 0, 7); g.fill();
+      g.restore();
+      g.fillStyle = "#ffd76a";
+      g.beginPath(); g.arc(c.x, c.y, 5.2 * pulse, 0, 7); g.fill();
+    }
+
+    function drawPower(g, p){
+      var colors = { auto: "#00e5ff", shield: "#3dff9e", magnet: "#ff4d7e" };
+      var col = colors[p.kind];
+      var bobY = p.y + Math.sin(run.t * 3 + p.x * 0.03) * 3;
+      g.save();
+      g.translate(p.x, bobY);
+      g.shadowColor = col;
+      g.shadowBlur = 16;
+      g.fillStyle = "#0a1830";
+      roundRectPath(g, -19, -19, 38, 38, 10);
+      g.fill();
+      g.shadowBlur = 0;
+      g.strokeStyle = col;
+      g.lineWidth = 2;
+      roundRectPath(g, -19, -19, 38, 38, 10);
+      g.stroke();
+      g.strokeStyle = col;
+      g.fillStyle = col;
+      g.lineWidth = 2;
+      g.lineCap = "round";
+      g.lineJoin = "round";
+      if (p.kind === "auto"){
+        g.beginPath();
+        g.moveTo(-10, -8); g.lineTo(10, -8); g.lineTo(10, 4); g.lineTo(-3, 4); g.lineTo(-8, 9); g.lineTo(-8, 4); g.lineTo(-10, 4);
+        g.closePath(); g.stroke();
+        g.beginPath(); g.arc(-4.5, -2, 1.4, 0, 7); g.arc(0, -2, 1.4, 0, 7); g.arc(4.5, -2, 1.4, 0, 7); g.fill();
+      } else if (p.kind === "shield"){
+        roundRectPath(g, -10, -8, 20, 18, 3); g.stroke();
+        g.beginPath(); g.moveTo(-10, -2.5); g.lineTo(10, -2.5); g.stroke();
+        g.beginPath(); g.moveTo(-5, -12); g.lineTo(-5, -6); g.moveTo(5, -12); g.lineTo(5, -6); g.stroke();
+        g.beginPath(); g.moveTo(-4.5, 4); g.lineTo(-1, 7.5); g.lineTo(5, 1.5); g.stroke();
+      } else {
+        g.beginPath();
+        g.moveTo(-11, -3); g.lineTo(-6, -3); g.lineTo(0, -9); g.lineTo(0, 9); g.lineTo(-6, 3); g.lineTo(-11, 3);
+        g.closePath(); g.fill();
+        g.beginPath(); g.arc(3, 0, 5.5, -0.9, 0.9); g.stroke();
+        g.beginPath(); g.arc(3, 0, 9.5, -0.9, 0.9); g.stroke();
+      }
+      g.restore();
+    }
+
+    function drawObstacle(g, o){
+      var gy = run.groundY;
+      if (o.type === "papers"){
+        g.save();
+        g.translate(o.x + o.w / 2, gy);
+        var sheets = [[-0.07, 0, 0], [0.05, -3, -2], [0, -6, 1]];
+        for (var i = 0; i < 3; i++){
+          g.save();
+          g.rotate(sheets[i][0]);
+          g.fillStyle = i === 2 ? "#eef5fa" : "#c9d9e6";
+          g.strokeStyle = "#8fb0c6";
+          g.lineWidth = 1;
+          g.fillRect(-18, -20 + sheets[i][1], 36, 20);
+          g.strokeRect(-18, -20 + sheets[i][1], 36, 20);
+          g.restore();
+        }
+        g.strokeStyle = "#7f9bb3";
+        g.lineWidth = 1.4;
+        for (var l = 0; l < 3; l++){
+          g.beginPath(); g.moveTo(-12, -21 + l * 5); g.lineTo(11, -21 + l * 5); g.stroke();
+        }
+        g.restore();
+      } else if (o.type === "phone"){
+        var jx = Math.sin(run.t * 40 + o.ph) * 0.7;
+        g.save();
+        g.translate(o.x + jx, gy);
+        g.fillStyle = "#12283f";
+        g.strokeStyle = "#0aa7bd";
+        g.lineWidth = 1.6;
+        roundRectPath(g, 0, -38, 27, 38, 5);
+        g.fill(); g.stroke();
+        g.fillStyle = "rgba(0,229,255,.28)";
+        g.fillRect(4, -33, 19, 24);
+        g.fillStyle = "#00e5ff";
+        g.beginPath(); g.arc(13.5, -4.5, 2, 0, 7); g.fill();
+        var ra = 0.45 + 0.4 * Math.sin(run.t * 9 + o.ph);
+        g.strokeStyle = "#ffb62e";
+        g.globalAlpha = Math.max(0.15, ra);
+        g.lineWidth = 2;
+        g.beginPath(); g.arc(0, -30, 7, -0.9, 0.2); g.stroke();
+        g.beginPath(); g.arc(27, -30, 7, Math.PI - 0.2, Math.PI + 0.9); g.stroke();
+        g.globalAlpha = Math.max(0.1, ra - 0.2);
+        g.beginPath(); g.arc(0, -30, 12, -0.9, 0.2); g.stroke();
+        g.beginPath(); g.arc(27, -30, 12, Math.PI - 0.2, Math.PI + 0.9); g.stroke();
+        g.restore();
+        g.globalAlpha = 1;
+      } else {
+        /* spam envelope — flies at head height: stay grounded or time the jump */
+        var cy = gy - 98 + Math.sin(run.t * 3 + o.ph) * 3;
+        g.save();
+        g.translate(o.x + o.w / 2, cy);
+        g.rotate(Math.sin(run.t * 2.4 + o.ph) * 0.06);
+        g.shadowColor = "rgba(255,84,112,.55)";
+        g.shadowBlur = 10;
+        g.fillStyle = "#f2f5f8";
+        g.fillRect(-23, -14, 46, 28);
+        g.shadowBlur = 0;
+        g.strokeStyle = "#b0c4d4";
+        g.lineWidth = 1.4;
+        g.strokeRect(-23, -14, 46, 28);
+        g.beginPath(); g.moveTo(-23, -14); g.lineTo(0, 3); g.lineTo(23, -14); g.stroke();
+        g.fillStyle = "#ff5470";
+        g.fillRect(13, -11, 7, 6);
+        g.font = "900 8px Nunito, sans-serif";
+        g.textAlign = "center";
+        g.fillText("SPAM", 0, 10.5);
+        g.restore();
+      }
+    }
+
+    function drawBit(g, cx, feetY){
+      var gy = run.groundY;
+      var hgt = Math.max(0, gy - feetY);
+      var shScale = Math.max(0.35, 1 - hgt / 260);
+      g.fillStyle = "rgba(0,0,0,.45)";
+      g.beginPath();
+      g.ellipse(cx, gy + 8, 26 * shScale, 6 * shScale, 0, 0, Math.PI * 2);
+      g.fill();
+      var air = feetY < gy - 1;
+      var bob = air ? 0 : -Math.abs(Math.sin(run.phase)) * 2;
+      g.save();
+      g.translate(cx, feetY - 70 + bob);
+      if (run.dead){ g.translate(0, 70); g.rotate(-0.5); g.translate(0, -70); }
+      /* legs */
+      var i, lx, lift, ox;
+      for (i = 0; i < 2; i++){
+        lx = i === 0 ? -11 : 4;
+        if (air){ lift = 5; ox = i === 0 ? -2 : 2; }
+        else { lift = Math.max(0, Math.sin(run.phase + i * Math.PI)) * 4; ox = Math.cos(run.phase + i * Math.PI) * 3; }
+        g.fillStyle = "#c7d8e6";
+        roundRectPath(g, lx + ox, 59 - lift, 7, 11, 3);
+        g.fill();
+      }
+      /* body */
+      g.fillStyle = "#eef5fa";
+      g.strokeStyle = "#c7d8e6";
+      g.lineWidth = 1.6;
+      g.beginPath();
+      g.moveTo(-15, 48); g.lineTo(15, 48); g.lineTo(18, 59);
+      g.quadraticCurveTo(18, 62, 15, 62);
+      g.lineTo(-15, 62);
+      g.quadraticCurveTo(-18, 62, -18, 59);
+      g.closePath(); g.fill(); g.stroke();
+      /* mic emblem */
+      g.fillStyle = "#0aa7bd";
+      roundRectPath(g, -2.4, 51, 4.8, 7, 2.4);
+      g.fill();
+      g.strokeStyle = "#0aa7bd";
+      g.lineWidth = 1.2;
+      g.beginPath(); g.arc(0, 54.6, 4.4, 0.2 * Math.PI, 0.8 * Math.PI); g.stroke();
+      /* ears */
+      g.fillStyle = "#c7d8e6";
+      roundRectPath(g, -30, 24, 5, 12, 2.5); g.fill();
+      roundRectPath(g, 25, 24, 5, 12, 2.5); g.fill();
+      /* head */
+      g.fillStyle = "#f4f9fc";
+      g.strokeStyle = "#c7d8e6";
+      g.lineWidth = 1.6;
+      roundRectPath(g, -26, 10, 52, 38, 11);
+      g.fill(); g.stroke();
+      /* face screen */
+      g.fillStyle = "#07182b";
+      roundRectPath(g, -20, 15.5, 40, 27, 7);
+      g.fill();
+      /* eyes */
+      g.fillStyle = "rgba(0,229,255,.16)";
+      g.beginPath(); g.arc(-7, 27, 6, 0, 7); g.arc(7, 27, 6, 0, 7); g.fill();
+      g.fillStyle = "#00e5ff";
+      g.beginPath(); g.arc(-7, 27, 3.1, 0, 7); g.arc(7, 27, 3.1, 0, 7); g.fill();
+      /* smile */
+      g.strokeStyle = "#00e5ff";
+      g.lineWidth = 2;
+      g.lineCap = "round";
+      g.beginPath(); g.moveTo(-6, 33); g.quadraticCurveTo(0, 37.5, 6, 33); g.stroke();
+      /* antenna */
+      g.strokeStyle = "#9fb6c9";
+      g.lineWidth = 2.4;
+      g.beginPath(); g.moveTo(0, 10); g.lineTo(0, 3); g.stroke();
+      g.fillStyle = "rgba(0,229,255,.18)";
+      g.beginPath(); g.arc(0, 2, 5.5, 0, 7); g.fill();
+      g.fillStyle = "#00e5ff";
+      g.beginPath(); g.arc(0, 2, 3, 0, 7); g.fill();
+      g.restore();
+    }
+
+    /* ============ RUNNER WIRING ============ */
+    $("cab-runner").addEventListener("click", goRunnerHome);
+    $("btn-back-lobby2").addEventListener("click", goLobby);
+    $("btn-start-run").addEventListener("click", startRun);
+    $("btn-r-quit").addEventListener("click", function(){ stopRun(); goRunnerHome(); });
+    $("btn-r-again").addEventListener("click", startRun);
+    $("btn-r-lobby").addEventListener("click", goLobby);
+    $("btn-r-share").addEventListener("click", copyRunnerShare);
+    $("runner-stage").addEventListener("pointerdown", function(e){ e.preventDefault(); runnerJump(); });
+    document.addEventListener("keydown", function(e){
+      if (!$("view-runner").classList.contains("active")) return;
+      if (e.code === "Space" || e.code === "ArrowUp"){ e.preventDefault(); runnerJump(); }
+    });
+    window.addEventListener("resize", function(){
+      if (run && $("view-runner").classList.contains("active")) fitRunnerCanvas();
+    });
+    $("lang-en3").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es3").addEventListener("click", function(){ setLang("es"); });
+    $("lang-en4").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es4").addEventListener("click", function(){ setLang("es"); });
+
+    /* ============ LA TIENDITA TYCOON ============ */
+    /* One shop day = 6 game hours (9 AM–3 PM) compressed into 330 real seconds. */
+    var DAY_LEN = 330;
+    var GAME_MIN_PER_SEC = 360 / DAY_LEN;
+    var tyk = null;
+    var tykInt = null;
+    var lastReport = null;
+    var tykClockCache = "";
+
+    var T_TOOLS = [
+      { id: "autoreply", nameKey: "tToolAuto", setup: 20, clears: "dm", icoClass: "auto", color: "#00e5ff",
+        svg: '<path d="M4 5h16v11H9.5L5 19.5V5z"/><circle cx="8.6" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="12" cy="10.5" r=".6" fill="#00e5ff"/><circle cx="15.4" cy="10.5" r=".6" fill="#00e5ff"/>' },
+      { id: "booking", nameKey: "tToolBook", setup: 20, clears: "phone", icoClass: "shield", color: "#3dff9e",
+        svg: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15.5l2 2 4-4"/>' },
+      { id: "translator", nameKey: "tToolTrans", setup: 15, clears: "counter", icoClass: "trans", color: "#ff4d7e",
+        svg: '<path d="M4 6h9M8.5 4v2c0 3.5-2 6.5-4.5 8.5M6 9.5c1.2 2.3 3.4 4.4 6 5.5"/><path d="M12.5 21l4.5-10 4.5 10M14.2 17.5h5.6"/>' },
+      { id: "stockalert", nameKey: "tToolStock", setup: 15, clears: null, icoClass: "stock", color: "#ffb62e",
+        svg: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>' }
+    ];
+    var T_CUSTOMERS = [
+      { name: "Doña Rosa", lang: "es" }, { name: "Mr. Carter", lang: "en" },
+      { name: "Carmen", lang: "es" }, { name: "José", lang: "bi" },
+      { name: "Mrs. Lee", lang: "en" }, { name: "Abuelo Ramón", lang: "es" },
+      { name: "Priya", lang: "en" }, { name: "Tomás", lang: "bi" },
+      { name: "Doña Carmen", lang: "es" }, { name: "Mr. Johnson", lang: "en" }
+    ];
+    var T_ASKS = {
+      es: ["¿Tienen los audífonos que traducen idiomas?", "Busco una canasta bonita para mi mamá.", "¿Cuánto cuesta la bocina inteligente?", "¿Me ayuda a encontrar un cargador, por favor?"],
+      en: ["Do you have the translator earbuds?", "I'm looking for a smart plug for my lamp.", "Where are the phone chargers?", "Can you show me the video doorbell?"],
+      bi: ["Hi — ¿tienen bocinas inteligentes?", "Buenas — looking for a gift for my dad."]
+    };
+    var T_DMS = ["¿A qué hora cierran hoy?", "Do you deliver in the neighborhood?", "¿Tienen la canasta grande en stock?", "What time do you open tomorrow?", "¿Aceptan tarjeta?", "Is the Echo Dot on sale?"];
+    var T_ITEMS = [
+      { en: "Smart plugs", es: "Enchufes inteligentes" },
+      { en: "Translator earbuds", es: "Audífonos traductores" },
+      { en: "Canastas", es: "Canastas" },
+      { en: "Smart speakers", es: "Bocinas inteligentes" },
+      { en: "Phone chargers", es: "Cargadores de teléfono" }
+    ];
+    /* real-world minutes each task would take by hand — the "shop hours" math */
+    var T_SHOPMIN = { dm: 5, phone: 10, counterEn: 6, counterEs: 12 };
+
+    function toolById(id){
+      for (var i = 0; i < T_TOOLS.length; i++) if (T_TOOLS[i].id === id) return T_TOOLS[i];
+      return null;
+    }
+    function toolForType(type){
+      for (var i = 0; i < T_TOOLS.length; i++) if (T_TOOLS[i].clears === type) return T_TOOLS[i];
+      return null;
+    }
+    function fmtClock(minsFloat){
+      var m = Math.floor(minsFloat);
+      var h24 = Math.floor(m / 60), mm = m % 60;
+      var period = h24 < 12 ? "AM" : "PM";
+      var h12 = h24 % 12; if (h12 === 0) h12 = 12;
+      return h12 + ":" + (mm < 10 ? "0" : "") + mm + " " + period;
+    }
+    function pickRand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+    function goTycoonHome(){
+      stopTimers(); stopRun(); stopTyk(); game = null;
+      renderTycoonBest();
+      show("view-tycoonhome");
+    }
+    function renderTycoonBest(){
+      var el = $("t-best-val");
+      if (!el) return;
+      var b = getBest("tycoon");
+      if (b === null) { el.textContent = "—"; return; }
+      var stars = getBest("tycoonstars");
+      var s = "";
+      if (stars !== null){ for (var i = 0; i < 3; i++) s += (i < stars ? "★" : "☆"); }
+      el.textContent = (b / 60).toFixed(1) + " hrs" + (s ? " · " + s : "");
+    }
+
+    function startDay(){
+      stopTyk();
+      tyk = {
+        t: 0, tasks: [], nextId: 1, spawnIn: 2.2, busy: null,
+        tools: {}, toolEls: {},
+        served: 0, booked: 0, answered: 0, restocked: 0, unhappy: 0,
+        toolCleared: 0, savedMin: 0, over: false,
+        lineObj: null, lineAt: -99, rushDone: false
+      };
+      T_TOOLS.forEach(function(tl){ tyk.tools[tl.id] = { state: "off", left: 0 }; });
+      buildTools();
+      renderQueue();
+      paintTykHud(true);
+      tykClockCache = "";
+      paintClock(true);
+      tykSay(
+        "¡Órale, let me show you! Doors are open — deploy a tool NOW while it's calm. Trust me on this one.",
+        "¡Órale, let me show you! Ya abrimos — activa una herramienta AHORA que hay calma. Confía en mí."
+      );
+      show("view-tycoon");
+      tykInt = setInterval(function(){ tykStep(0.1); }, 100);
+    }
+    function stopTyk(){
+      if (tykInt) { clearInterval(tykInt); tykInt = null; }
+      tyk = null;
+    }
+
+    function tykSay(en, es){
+      if (!tyk) return;
+      tyk.lineObj = { en: en, es: es };
+      tyk.lineAt = tyk.t;
+      paintTykLine();
+    }
+    function paintTykLine(){
+      if (!tyk || !tyk.lineObj) return;
+      var el = $("t-bitline");
+      if (el) el.textContent = tyk.lineObj[LANG];
+    }
+
+    function buildTools(){
+      var bar = $("tools-bar");
+      bar.innerHTML = "";
+      tyk.toolEls = {};
+      T_TOOLS.forEach(function(tl){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "tool-btn";
+        b.innerHTML =
+          '<span class="pu-ico ' + tl.icoClass + '" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + tl.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + tl.svg + "</svg></span>" +
+          '<span style="flex:1; min-width:0"><b></b><span class="t-state"></span></span>' +
+          '<span class="t-prog"></span>';
+        b.addEventListener("click", function(){ tapTool(tl.id); });
+        bar.appendChild(b);
+        tyk.toolEls[tl.id] = {
+          btn: b,
+          name: b.querySelector("b"),
+          state: b.querySelector(".t-state"),
+          prog: b.querySelector(".t-prog")
+        };
+      });
+      renderTools();
+    }
+    function renderTools(){
+      if (!tyk) return;
+      var d = L();
+      T_TOOLS.forEach(function(tl){
+        var els = tyk.toolEls[tl.id];
+        if (!els) return;
+        var st = tyk.tools[tl.id];
+        els.name.textContent = d[tl.nameKey];
+        els.btn.classList.toggle("deploying", st.state === "deploying");
+        els.btn.classList.toggle("on", st.state === "on");
+        els.btn.disabled = st.state !== "off";
+        if (st.state === "off") els.state.textContent = d.tToolTap.replace("{s}", String(tl.setup));
+        else if (st.state === "deploying") els.state.textContent = d.tToolSetting.replace("{s}", String(Math.ceil(st.left)));
+        else els.state.textContent = d.tToolOn;
+        els.prog.style.width = st.state === "deploying" ? ((1 - st.left / tl.setup) * 100) + "%" : "0%";
+      });
+    }
+
+    function tapTool(id){
+      if (!tyk || tyk.over || tyk.busy) return;
+      var st = tyk.tools[id];
+      if (!st || st.state !== "off") return;
+      var tl = toolById(id);
+      st.state = "deploying";
+      st.left = tl.setup;
+      tyk.busy = { kind: "deploy", toolId: id, left: tl.setup, total: tl.setup };
+      tykSay(
+        "Setting up " + L()[tl.nameKey] + " — hands busy for " + tl.setup + "s. Worth it, watch.",
+        "Instalando " + L()[tl.nameKey] + " — manos ocupadas por " + tl.setup + "s. Vale la pena, mira."
+      );
+      renderTools();
+    }
+    function toolOn(id){
+      var st = tyk.tools[id];
+      st.state = "on";
+      var tl = toolById(id);
+      if (tl.clears){
+        for (var i = 0; i < tyk.tasks.length; i++){
+          var task = tyk.tasks[i];
+          if (task.type === tl.clears && task.state === "queued") makeAuto(task);
+        }
+      }
+      var lines = {
+        autoreply: ["Auto-reply is LIVE — DMs now answer themselves. ¡Mira qué bonito!", "¡Respuesta automática ACTIVADA! Los mensajes se responden solos. ¡Mira qué bonito!"],
+        booking: ["Booking assistant is LIVE — the phone books its own citas now.", "¡Asistente de citas ACTIVADO! El teléfono agenda sus propias citas ahora."],
+        translator: ["Translator is LIVE — counter customers served instantly, EN o ES.", "¡Traductor ACTIVADO! Clientes del mostrador atendidos al instante, EN o ES."],
+        stockalert: ["Stock alert is LIVE — shelves now call out 30s before they empty. Restock = one quick tap.", "¡Alerta de inventario ACTIVADA! Los estantes avisan 30s antes de vaciarse. Reponer = un toque rápido."]
+      };
+      tykSay(lines[id][0], lines[id][1]);
+      renderTools();
+      renderQueue();
+    }
+
+    function spawnTask(){
+      var d = L();
+      var progress = tyk.t / DAY_LEN;
+      var r = Math.random();
+      var type = r < 0.40 ? "counter" : (r < 0.65 ? "dm" : (r < 0.85 ? "phone" : "stock"));
+      var cust = pickRand(T_CUSTOMERS);
+      var task = { id: tyk.nextId++, type: type, state: "queued", autoLeft: 0, autoTotal: 0, el: null, barEl: null, statusEl: null, chipEl: null, urgent: false };
+      if (type === "counter"){
+        task.custName = cust.name;
+        task.custLang = cust.lang;
+        task.sub = pickRand(T_ASKS[cust.lang]);
+        task.patienceTotal = task.patienceLeft = 24 + Math.random() * 6;
+        task.shopMin = cust.lang === "es" ? T_SHOPMIN.counterEs : T_SHOPMIN.counterEn;
+      } else if (type === "dm"){
+        task.custName = cust.name;
+        task.sub = "«" + pickRand(T_DMS) + "»";
+        task.patienceTotal = task.patienceLeft = 18 + Math.random() * 5;
+        task.shopMin = T_SHOPMIN.dm;
+      } else if (type === "phone"){
+        task.custName = cust.name;
+        task.sub = d.tPhoneSub + " — " + cust.name;
+        task.patienceTotal = task.patienceLeft = 22 + Math.random() * 5;
+        task.shopMin = T_SHOPMIN.phone;
+      } else {
+        task.item = pickRand(T_ITEMS);
+        task.warn = tyk.tools.stockalert.state === "on";
+        task.patienceTotal = task.patienceLeft = task.warn ? 30 : (15 + Math.random() * 3);
+        task.shopMin = 0;
+      }
+      var tl = toolForType(type);
+      if (tl && tyk.tools[tl.id].state === "on") makeAuto(task);
+      tyk.tasks.push(task);
+      renderQueue();
+    }
+    function makeAuto(task){
+      task.state = "auto";
+      task.autoTotal = task.autoLeft = task.type === "dm" ? 2.5 : (task.type === "phone" ? 3 : 2);
+    }
+
+    function taskTitle(task){
+      var d = L();
+      if (task.type === "counter") return d.tTaskCounter;
+      if (task.type === "dm") return d.tTaskDM;
+      if (task.type === "phone") return d.tTaskPhone;
+      return task.warn ? d.tTaskStockLow : d.tTaskStockEmpty;
+    }
+    function taskSub(task){
+      var d = L();
+      if (task.type === "stock") return d.tStockSub.replace("{item}", task.item[LANG]);
+      if (task.type === "counter") return task.custName + " — " + task.sub;
+      if (task.type === "phone") return d.tPhoneSub + " — " + task.custName;
+      return task.sub;
+    }
+    function taskIcon(task){
+      if (task.type === "counter")
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>';
+      if (task.type === "dm")
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4d7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9.5L5 19.5V5z"/></svg>';
+      if (task.type === "phone")
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3dff9e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.25a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9z"/></svg>';
+      return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffb62e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>';
+    }
+    function esSlow(task){
+      return task.type === "counter" && task.custLang === "es" && tyk.tools.translator.state !== "on";
+    }
+
+    function renderQueue(){
+      if (!tyk) return;
+      var wrap = $("t-queue");
+      wrap.innerHTML = "";
+      var d = L();
+      tyk.tasks.forEach(function(task){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "task";
+        var chip = "";
+        if (task.type === "counter"){
+          if (esSlow(task)) chip = '<span class="t-chip es">' + d.tChipEsSlow + "</span>";
+          else chip = '<span class="t-chip">' + task.custLang.toUpperCase() + "</span>";
+        } else if (task.type === "stock" && !task.warn){
+          chip = '<span class="t-chip es">!</span>';
+        }
+        b.innerHTML =
+          '<span class="t-top"><span class="t-ico c-' + task.type + '" aria-hidden="true">' + taskIcon(task) + "</span>" +
+          '<span style="flex:1; min-width:0"><h4></h4><span class="t-sub"></span></span>' + chip + "</span>" +
+          '<span class="patience"><i></i></span>' +
+          '<span class="t-status"></span>' +
+          '<span class="phrase">' + d.tPhraseTag + ': «¡Buenas! ¿En qué le ayudo?» · «Un momentito, por favor…»</span>';
+        b.querySelector("h4").textContent = taskTitle(task);
+        b.querySelector(".t-sub").textContent = taskSub(task);
+        b.addEventListener("click", function(){ tapTask(task.id); });
+        wrap.appendChild(b);
+        task.el = b;
+        task.barEl = b.querySelector(".patience i");
+        task.statusEl = b.querySelector(".t-status");
+        paintTask(task);
+      });
+      $("t-queue-empty").style.display = tyk.tasks.length ? "none" : "block";
+    }
+    function paintTask(task){
+      if (!task.el) return;
+      var d = L();
+      var busyTask = tyk.busy && tyk.busy.kind === "manual" && tyk.busy.taskId === task.id;
+      task.el.classList.toggle("doing", !!busyTask);
+      task.el.classList.toggle("auto", task.state === "auto");
+      task.el.classList.toggle("phrasing", !!busyTask && esSlow(task));
+      var pct, cls;
+      if (busyTask){
+        pct = (1 - tyk.busy.left / tyk.busy.total) * 100; cls = "doing";
+        task.statusEl.textContent = d.tStatusManual.replace("{s}", String(Math.ceil(tyk.busy.left)));
+      } else if (task.state === "auto"){
+        pct = (1 - task.autoLeft / task.autoTotal) * 100; cls = "auto";
+        task.statusEl.textContent = task.type === "dm" ? d.tStatusAutoDM : (task.type === "phone" ? d.tStatusAutoPhone : d.tStatusAutoCounter);
+      } else if (task.type === "stock" && task.warn){
+        pct = (task.patienceLeft / task.patienceTotal) * 100; cls = pct < 30 ? "low" : (pct < 60 ? "mid" : "");
+        task.statusEl.textContent = d.tStatusWarn;
+      } else {
+        pct = (task.patienceLeft / task.patienceTotal) * 100; cls = pct < 25 ? "low" : (pct < 50 ? "mid" : "");
+        task.statusEl.textContent = "";
+      }
+      task.el.classList.toggle("urgent", task.state === "queued" && pct < 25);
+      task.barEl.style.width = Math.max(0, Math.min(100, pct)) + "%";
+      task.barEl.className = cls;
+    }
+
+    function tapTask(id){
+      if (!tyk || tyk.over || tyk.busy) return;
+      var task = null;
+      for (var i = 0; i < tyk.tasks.length; i++) if (tyk.tasks[i].id === id) task = tyk.tasks[i];
+      if (!task || task.state !== "queued") return;
+      var dur = 3;
+      if (task.type === "phone") dur = 4;
+      else if (task.type === "stock") dur = task.warn ? 2 : 5;
+      else if (esSlow(task)) dur = 8;
+      task.state = "manual";
+      tyk.busy = { kind: "manual", taskId: task.id, left: dur, total: dur };
+      paintTask(task);
+    }
+
+    function clearTask(task, byTool){
+      var idx = tyk.tasks.indexOf(task);
+      if (idx === -1) return;
+      tyk.tasks.splice(idx, 1);
+      if (task.type === "counter") tyk.served += 1;
+      else if (task.type === "phone") tyk.booked += 1;
+      else if (task.type === "dm") tyk.answered += 1;
+      else if (task.type === "stock") tyk.restocked += 1;
+      if (byTool){
+        tyk.toolCleared += 1;
+        tyk.savedMin += task.shopMin;
+        if (tyk.t - tyk.lineAt > 7){
+          var lines = {
+            dm: ["Auto-reply just answered a DM on its own — that's 5 shop-minutes back.", "La respuesta automática acaba de contestar un mensaje sola — 5 minutos de tienda de vuelta."],
+            phone: ["Booking assistant just booked a cita by itself — 10 shop-minutes back.", "El asistente de citas acaba de agendar una cita solo — 10 minutos de tienda de vuelta."],
+            counter: ["Translator just served that customer instantly — no queue, no sweat.", "El Traductor acaba de atender a ese cliente al instante — sin fila, sin estrés."]
+          };
+          if (lines[task.type]) tykSay(lines[task.type][0], lines[task.type][1]);
+        }
+      }
+      paintTykHud(false);
+      renderQueue();
+    }
+    function expireTask(task){
+      var idx = tyk.tasks.indexOf(task);
+      if (idx === -1) return;
+      tyk.tasks.splice(idx, 1);
+      tyk.unhappy += 1;
+      if (tyk.unhappy >= 5){
+        paintTykHud(false);
+        renderQueue();
+        endDay(true);
+        return;
+      }
+      var lines = [
+        ["Ay — that one walked away. ¡Échale ganas, the queue is watching!", "Ay — ese se fue. ¡Échale ganas, la fila está mirando!"],
+        ["Another one walked. This is the part where a tool would have saved you…", "Otro que se fue. Aquí es donde una herramienta te hubiera salvado…"],
+        ["Ouch — patience ran out. Keep the line moving, familia.", "Auch — se acabó la paciencia. A mover la fila, familia."]
+      ];
+      var ln = pickRand(lines);
+      tykSay(ln[0], ln[1]);
+      paintTykHud(false);
+      renderQueue();
+    }
+
+    function paintTykHud(force){
+      if (!tyk) return;
+      setText("t-served", String(tyk.served + tyk.booked + tyk.answered));
+      setText("t-unhappy", String(tyk.unhappy));
+      setText("t-saved", (tyk.savedMin / 60).toFixed(1) + " h");
+    }
+    function paintClock(force){
+      if (!tyk) return;
+      var txt = fmtClock(540 + tyk.t * GAME_MIN_PER_SEC);
+      if (force || txt !== tykClockCache){
+        tykClockCache = txt;
+        $("t-clock").textContent = txt;
+      }
+      $("t-day-fill").style.width = Math.min(100, (tyk.t / DAY_LEN) * 100) + "%";
+    }
+
+    function tykStep(dt){
+      if (!tyk || tyk.over) return;
+      tyk.t += dt;
+      paintClock(false);
+      if (!tyk.rushDone && tyk.t >= DAY_LEN / 2){
+        tyk.rushDone = true;
+        tykSay("¡La hora del almuerzo! Lunch rush — everybody shows up at once. ¡Échale!", "¡La hora del almuerzo! Todos llegan a la vez. ¡Échale ganas!");
+      }
+      /* spawning — interval tightens from ~9.5s to ~5s by closing */
+      tyk.spawnIn -= dt;
+      if (tyk.spawnIn <= 0){
+        spawnTask();
+        if (tyk.t / DAY_LEN > 0.45 && Math.random() < 0.15) spawnTask();
+        var base = 9.5 - 4.5 * (tyk.t / DAY_LEN);
+        tyk.spawnIn = base * (0.75 + Math.random() * 0.5);
+      }
+      /* busy work: manual handling or tool setup */
+      if (tyk.busy){
+        tyk.busy.left -= dt;
+        if (tyk.busy.kind === "deploy"){
+          tyk.tools[tyk.busy.toolId].left = Math.max(0, tyk.busy.left);
+          renderToolsTick();
+        }
+        if (tyk.busy.left <= 0){
+          var busy = tyk.busy;
+          tyk.busy = null;
+          if (busy.kind === "manual"){
+            var bt = null;
+            for (var i = 0; i < tyk.tasks.length; i++) if (tyk.tasks[i].id === busy.taskId) bt = tyk.tasks[i];
+            if (bt) clearTask(bt, false);
+          } else {
+            toolOn(busy.toolId);
+          }
+        }
+      }
+      /* tasks: auto-clear countdowns + patience */
+      for (var j = tyk.tasks.length - 1; j >= 0; j--){
+        if (!tyk) break; /* an expiry may have closed the shop early */
+        var task = tyk.tasks[j];
+        if (!task) continue;
+        if (task.state === "auto"){
+          task.autoLeft -= dt;
+          if (task.autoLeft <= 0){ clearTask(task, true); continue; }
+        } else if (task.state === "queued"){
+          task.patienceLeft -= dt;
+          if (task.patienceLeft <= 0){ expireTask(task); continue; }
+        }
+        if (task.el) paintTask(task);
+      }
+      if (tyk && tyk.t >= DAY_LEN) endDay(false);
+    }
+    function renderToolsTick(){
+      if (!tyk || !tyk.busy || tyk.busy.kind !== "deploy") return;
+      var id = tyk.busy.toolId;
+      var els = tyk.toolEls[id];
+      var st = tyk.tools[id];
+      if (!els || !st) return;
+      els.state.textContent = L().tToolSetting.replace("{s}", String(Math.ceil(st.left)));
+      els.prog.style.width = ((1 - st.left / toolById(id).setup) * 100) + "%";
+    }
+
+    function endDay(early){
+      if (!tyk || tyk.over) return;
+      tyk.over = true;
+      if (tykInt) { clearInterval(tykInt); tykInt = null; }
+      var unhappy = tyk.unhappy;
+      var stars = unhappy <= 1 ? 3 : (unhappy <= 3 ? 2 : 1);
+      var endMin = 540 + tyk.t * GAME_MIN_PER_SEC;
+      var prev = getBest("tycoon");
+      var isNewBest = prev === null || Math.round(tyk.savedMin) > prev;
+      if (isNewBest){
+        setBest("tycoon", Math.round(tyk.savedMin));
+        setBest("tycoonstars", stars);
+      }
+      lastReport = {
+        stars: stars, early: early, endTime: fmtClock(endMin),
+        served: tyk.served, booked: tyk.booked, answered: tyk.answered,
+        restocked: tyk.restocked, unhappy: unhappy,
+        toolCleared: tyk.toolCleared, savedMin: tyk.savedMin, isNewBest: isNewBest
+      };
+      tyk = null;
+      renderReportText();
+      renderTycoonBest();
+      show("view-tycoonreport");
+    }
+    function renderReportText(){
+      if (!lastReport) return;
+      var d = L();
+      $("t-report-title").textContent = lastReport.early ? d.tReportEarly : d.tReportTitle;
+      var starsHtml = "";
+      for (var i = 0; i < 3; i++) starsHtml += i < lastReport.stars ? "★" : '<span class="off">★</span>';
+      $("t-stars").innerHTML = starsHtml;
+      $("t-reaction").textContent = lastReport.stars >= 3 ? d.tReact3 : (lastReport.stars === 2 ? d.tReact2 : d.tReact1);
+      var note = $("t-early-note");
+      note.classList.toggle("show", !!lastReport.early);
+      if (lastReport.early) note.textContent = d.tEarlyNote.replace("{time}", lastReport.endTime);
+      $("t-hours").textContent = (lastReport.savedMin / 60).toFixed(1);
+      $("t-hours-sub").textContent = d.tHoursSub.replace("{n}", String(lastReport.toolCleared));
+      $("tr-served").textContent = String(lastReport.served);
+      $("tr-booked").textContent = String(lastReport.booked);
+      $("tr-answered").textContent = String(lastReport.answered);
+      $("tr-restocked").textContent = String(lastReport.restocked);
+      $("tr-auto").textContent = String(lastReport.toolCleared);
+      $("tr-unhappy").textContent = String(lastReport.unhappy);
+      $("t-newbest").classList.toggle("show", !!lastReport.isNewBest);
+    }
+
+    /* ============ TYCOON WIRING ============ */
+    $("cab-tycoon").addEventListener("click", goTycoonHome);
+    $("btn-back-lobby3").addEventListener("click", goLobby);
+    $("btn-start-day").addEventListener("click", startDay);
+    $("btn-t-quit").addEventListener("click", function(){ stopTyk(); goTycoonHome(); });
+    $("btn-t-again").addEventListener("click", startDay);
+    $("btn-t-lobby").addEventListener("click", goLobby);
+    $("lang-en5").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es5").addEventListener("click", function(){ setLang("es"); });
+    $("lang-en6").addEventListener("click", function(){ setLang("en"); });
+    $("lang-es6").addEventListener("click", function(){ setLang("es"); });
+
+    applyLang();
+    </script>
+  </body>
+</html>
