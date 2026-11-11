@@ -93,6 +93,60 @@
 // BULLETIN DATA — append new entries here; the list is sorted newest first.
 const BULLETINS = [
   {
+    date: 'November 10, 2026',
+    headline: '6,000 AI Agents. Ready Day One.',
+    summary: 'IBM and Microsoft announced Imagine Enterprise on November 10, 2026 — an agentic platform to build, run and govern AI agents for industry-specific processes. IBM Consulting brings more than 6,000 prebuilt AI agents and assets plus forward-deployed engineering support, while Microsoft provides the AI, cloud and security foundation. Initial frameworks cover financial services, insurance and retail.',
+    consultantTake: 'The giants just proved the play — don\'t build from scratch. Start with proven agents built for your industry, plug them into the tools you already use, and keep humans in charge. Small businesses can run the same play at their scale.'
+  },
+  {
+    date: 'November 9, 2026',
+    headline: 'Agents Multiplying. Accountability Isn\'t.',
+    summary: 'Gravitee\'s State of AI Agent Security study, released November 9, 2026, surveyed 900 senior tech leaders in the US and UK and found organizations running more than 150 AI agents more than doubled since April, from 7% to 16% — yet only 17% give each agent its own identity, fewer than 1 in 10 has a named person formally accountable for agent actions, and 52% already had an agent-related security or privacy incident in the past year.',
+    consultantTake: 'Every agent needs an owner, an identity, and limits — before it scales. AI enhances your team, it doesn\'t replace accountability. Set the guardrails first and agents give you time back safely.'
+  },
+  {
+    date: 'November 8, 2026',
+    headline: '67% of Failed AI Agents Looked Done',
+    summary: 'Microsoft\'s expanded ThinkingBox evaluation, published November 6, 2026, ran 121,680 trials on agents editing business records and found 79,853 failed the executable record check — yet 67.24% of those failures still looked complete, with a confident final reply and no visible error. The underlying records showed wrong field values, unintended changes, and missing updates.',
+    consultantTake: 'Don\'t trust an agent\'s "done" — verify the final record. AI does the work faster, a human checks the result and approves anything irreversible. That\'s how small businesses win safely.'
+  },
+  {
+    date: 'November 7, 2026',
+    headline: 'Claude Can Now Read Your Bank Accounts',
+    summary: 'Anthropic announced Personal Finance in Claude on November 5, 2026, a US beta for Pro, Max and Ultra subscribers that links up to 16 bank, card, loan and investment accounts through Plaid and reads up to 24 months of transactions to answer money questions in plain language. Access is read-only — Claude cannot move, manage or invest money, and the feature is not designed to give investment advice.',
+    consultantTake: 'This is the model for your business too: connect AI to your real numbers read-only first, with clear permissions and a human approving every action. Insight first, automation second.'
+  },
+  {
+    date: 'November 6, 2026',
+    headline: 'GPT-6 Cyber Finds 948 Ways In',
+    summary: 'OpenAI released GPT-6 Cyber on November 5, 2026, a specialized security model that reproduced 1,724 Linux kernel vulnerabilities and developed working exploits for 948 of them, and found 81 previously unknown high-severity Firefox flaws that Mozilla has begun patching. OpenAI rates the model Critical — its highest cybersecurity designation — and initially limits access to selected approved customers in its Daybreak Red program, at $20 per million input tokens and $100 per million output tokens.',
+    consultantTake: 'This is AI as a shield: the same power that finds the holes hands defenders the patches — 304 critical fixes already sent to Linux maintainers. For your business: keep software updated, turn on MFA, and set an approved-AI-tools policy now, before AI-speed attacks become the norm.'
+  },
+  {
+    date: 'November 5, 2026',
+    headline: 'AI Coworker Use Explodes 21x',
+    summary: 'Salesforce announced November 5, 2026 that Agentforce Coworker usage soared 21x in just three months, with more than 185,000 users delegating real work to AI and companies like Adecco expanding adoption across 40 countries. Coworker now expands to Microsoft Teams, mobile and desktop, with reusable Skills, Conversation History, and scheduled tasks, priced at $50 per user per month.',
+    consultantTake: 'Don\'t collect more chatbots — give ONE AI coworker a real job with your data, clear guardrails, and a human approving the big calls. That\'s how small teams get enterprise leverage.'
+  },
+  {
+    date: 'November 4, 2026',
+    headline: 'Only 10% Let AI Decide Alone',
+    summary: 'A new TCS Enterprise AI Study published November 4, 2026 — surveying 1,333 senior executives across 25 countries — found 84% cite productivity as AI\'s primary value, yet only 10% of enterprises let AI agents make decisions across multiple business functions without human approval, and only 9% can securely coordinate agents across their enterprise applications. Security, risk management and governance now outrank cost and speed in deployment decisions, and while 90% call model independence important, only 7% have a company-wide plan to switch AI providers.',
+    consultantTake: 'This is the winning setup, not a weakness: AI does the work, a human approves the big calls. Build ONE workflow with clear guardrails and an approval step — that\'s how small businesses get the productivity gains without the risk.'
+  },
+  {
+    date: 'November 3, 2026',
+    headline: '$177B Year: Agents Do 80% of the Work',
+    summary: 'Menlo Ventures released its 2026 State of Enterprise AI report on November 3, 2026, finding enterprise AI spending reached $176.8 billion, up 5.4x from $33 billion in 2025. Autonomous agents now generate 80% of AI tokens on OpenRouter, growing 37x since February, and enterprises spend $1.70 putting AI to work for every $1 spent on model training. Adoption is still concentrated: only 65% of enterprises pay for AI, and Anthropic (55%) plus OpenAI (31%) command 86% of enterprise LLM API spend.',
+    consultantTake: 'The winners aren\'t buying more chat — they\'re deploying agents on real work and measuring cost per finished task. Start with ONE workflow, put an agent on it, and keep a human approving the big calls. The 35% of businesses still waiting is the opening.'
+  },
+  {
+    date: 'November 2, 2026',
+    headline: 'AI Agents Enter Real Operations',
+    summary: 'ADNOC announced on November 2, 2026 a multi-year agreement with OpenAI and G42 to deploy AI agents across its energy operations, combining OpenAI\'s Frontier technology with ADNOC\'s industrial data and computing infrastructure in the UAE. Initial applications focus on planning oil and gas fields and connecting commercial decisions across production, refining, logistics and trading, with human experts retaining oversight of consequential decisions. No contract value or firm completion timetable was disclosed.',
+    consultantTake: 'This is the shift — agents doing real workflow, not just chat. You don\'t need oil fields to copy it: pick ONE repetitive workflow, give the agent only the data it needs, and keep a human approving the big calls.'
+  },
+  {
     date: 'November 1, 2026',
     headline: '4 AI Giants Agree: One Line to Opt Out of AI Training',
     summary: 'OpenAI, Google, Microsoft and Anthropic announced on October 30, 2026 that they will honor a single shared robots.txt signal — the __usage_ai-training token, drafted at the IETF by Anthropic\'s Kevin Kelley — letting any website opt out of generative AI training with one entry instead of blocking each crawler separately. Anthropic has already started implementing it; Microsoft will honor it from February 1, 2027, Google in early 2027, and OpenAI in the coming months. The signal covers future training only and does not affect search crawling.',
